@@ -6,11 +6,6 @@ defmodule PhxestimationsWeb.GameLive.Join do
 
   @impl true
   def mount(%{"id" => game_id}, session, socket) do
-    participant_id = ParticipantSession.get_participant_id(session)
-    # Debug: log participant_id to see if sessions are shared
-    require Logger
-    Logger.debug("Join page mounted with participant_id: #{participant_id}")
-
     case Poker.get_game(game_id) do
       {:ok, game} ->
         participant_id = ParticipantSession.get_participant_id(session)

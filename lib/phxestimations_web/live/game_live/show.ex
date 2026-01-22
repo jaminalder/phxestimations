@@ -184,7 +184,14 @@ defmodule PhxestimationsWeb.GameLive.Show do
     vote_count = Enum.count(voters, & &1.vote)
     total_voters = length(voters)
     all_voted? = voters != [] && Enum.all?(voters, & &1.vote)
-    statistics = if game.state == :revealed, do: Game.calculate_statistics(game), else: nil
+
+    statistics =
+      if game.state == :revealed do
+        {average, distribution} = Game.calculate_statistics(game)
+        %{average: average, distribution: distribution}
+      else
+        nil
+      end
 
     assign(socket,
       voters: voters,
