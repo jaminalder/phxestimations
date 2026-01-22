@@ -105,7 +105,7 @@ defmodule PhxestimationsWeb.GameComponents do
             "text-lg font-bold",
             cond do
               @revealed? && @participant.vote ->
-                "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flipped"
+                "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white"
 
               @participant.vote ->
                 "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
@@ -183,27 +183,12 @@ defmodule PhxestimationsWeb.GameComponents do
 
   def vote_statistics(assigns) do
     ~H"""
-    <div id="vote-statistics" class="space-y-4">
+    <div id="vote-statistics">
       <div :if={@statistics.average} id="vote-average" class="text-center">
         <span class="text-sm text-slate-400">Average:</span>
         <span class="text-2xl font-bold text-white ml-2">
           {Float.round(@statistics.average, 1)}
         </span>
-      </div>
-
-      <div
-        :if={@statistics.distribution && map_size(@statistics.distribution) > 0}
-        id="vote-distribution"
-        class="flex justify-center gap-4 flex-wrap"
-      >
-        <%= for {card, count} <- Enum.sort_by(@statistics.distribution, fn {k, _} -> k end) do %>
-          <div class="text-center">
-            <div class="w-10 h-14 rounded bg-slate-700/50 flex items-center justify-center text-white font-bold mb-1">
-              {card}
-            </div>
-            <span class="text-sm text-slate-400">{count}x</span>
-          </div>
-        <% end %>
       </div>
     </div>
     """

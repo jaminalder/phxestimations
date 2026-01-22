@@ -146,6 +146,7 @@ defmodule PhxestimationsWeb.GameComponentsTest do
         )
 
       assert html =~ "vote-statistics"
+      assert html =~ "vote-average"
       assert html =~ "5.0"
     end
   end
