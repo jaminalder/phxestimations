@@ -37,6 +37,22 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Copy to clipboard handler
+window.addEventListener("phx:copy", (event) => {
+  const target = event.target
+  if (target && target.value) {
+    navigator.clipboard.writeText(target.value).then(() => {
+      // Show brief feedback
+      const button = target.nextElementSibling
+      if (button) {
+        const originalText = button.textContent
+        button.textContent = "Copied!"
+        setTimeout(() => { button.textContent = originalText }, 2000)
+      }
+    })
+  }
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 
