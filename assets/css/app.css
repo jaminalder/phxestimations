@@ -103,3 +103,58 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* Custom theme configuration */
+@theme {
+  --font-display: "Space Mono", monospace;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+}
+
+/* Typography defaults */
+body {
+  font-family: var(--font-body);
+}
+
+/* Poker card styles */
+.poker-card {
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease-out;
+}
+
+.poker-card.flipped {
+  transform: rotateY(180deg);
+}
+
+.poker-card-front,
+.poker-card-back {
+  backface-visibility: hidden;
+}
+
+.poker-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Button interaction states */
+.btn-poker {
+  transition: all 0.15s ease-out;
+}
+
+.btn-poker:active {
+  transform: scale(0.98);
+}
+
+/* Animate participant cards on load */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease-out forwards;
+}

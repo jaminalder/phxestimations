@@ -17,7 +17,8 @@ defmodule PhxestimationsWeb.Router do
   scope "/", PhxestimationsWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", HomeLive, :index
+    live "/games/new", GameLive.New, :new
   end
 
   # Other scopes may use custom stacks.
