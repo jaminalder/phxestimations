@@ -11,8 +11,9 @@ defmodule Phxestimations.Application do
       PhxestimationsWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:phxestimations, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Phxestimations.PubSub},
-      # Start a worker by calling: Phxestimations.Worker.start_link(arg)
-      # {Phxestimations.Worker, arg},
+      # Game process registry and supervisor
+      {Registry, keys: :unique, name: Phxestimations.Poker.GameRegistry},
+      Phxestimations.Poker.GameSupervisor,
       # Start to serve requests, typically the last entry
       PhxestimationsWeb.Endpoint
     ]
