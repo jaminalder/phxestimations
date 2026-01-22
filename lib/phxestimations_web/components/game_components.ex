@@ -1,0 +1,409 @@
+defmodule PhxestimationsWeb.GameComponents do
+  @moduledoc """
+  Provides game-specific UI components for the Planning Poker application.
+  """
+
+  use Phoenix.Component
+
+  alias Phoenix.LiveView.JS
+  alias Phxestimations.Poker
+
+  @doc """
+  Renders a poker card that can be selected for voting.
+
+  ## Examples
+
+      <.poker_card card="5" selected={true} disabled={false} />
+  """
+  attr :card, :string, required: true
+  attr :selected, :boolean, default: false
+  attr :disabled, :boolean, default: false
+
+  def poker_card(assigns) do
+    ~H"""
+    <button
+      id={"card-#{@card}"}
+      phx-click={unless @disabled, do: "vote"}
+      phx-value-card={@card}
+      disabled={@disabled}
+      class={[
+        "w-14 h-20 rounded-lg font-bold text-lg",
+        "transition-all duration-150",
+        "focus:outline-none focus:ring-2 focus:ring-blue-400",
+        if(@disabled, do: "opacity-50 cursor-not-allowed"),
+        if(@selected,
+          do:
+            "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 -translate-y-1",
+          else: "bg-slate-700/50 hover:bg-slate-600/50 text-white border border-slate-600/50"
+        ),
+        unless(@disabled, do: "hover:-translate-y-1")
+      ]}
+    >
+      {@card}
+    </button>
+    """
+  end
+
+  @doc """
+  Renders the card selection deck.
+
+  ## Examples
+
+      <.card_deck cards={["1", "2", "3"]} selected_card="2" state={:voting} />
+  """
+  attr :cards, :list, required: true
+  attr :selected_card, :string, default: nil
+  attr :state, :atom, required: true
+
+  def card_deck(assigns) do
+    ~H"""
+    <div id="card-deck" class="border-t border-slate-700/50 bg-slate-800/30 backdrop-blur-sm p-6">
+      <div class="max-w-4xl mx-auto">
+        <div :if={@state == :voting} class="flex flex-wrap justify-center gap-2">
+          <.poker_card
+            :for={card <- @cards}
+            card={card}
+            selected={@selected_card == card}
+            disabled={false}
+          />
+        </div>
+        <div :if={@state == :revealed} class="text-center text-slate-400">
+          Votes have been revealed. Start a new round to vote again.
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a participant's card on the poker table.
+
+  ## Examples
+
+      <.participant_card participant={participant} current_user?={true} revealed?={false} />
+  """
+  attr :participant, :map, required: true
+  attr :current_user?, :boolean, default: false
+  attr :revealed?, :boolean, default: false
+
+  def participant_card(assigns) do
+    ~H"""
+    <div
+      id={"participant-#{@participant.id}"}
+      class={[
+        "relative p-4 rounded-xl text-center animate-fade-in-up",
+        "bg-slate-800/50 border",
+        if(@current_user?, do: "border-blue-500/50", else: "border-slate-700/50"),
+        if(!@participant.connected, do: "opacity-50")
+      ]}
+    >
+      <div class="mb-3">
+        <div
+          id={"participant-#{@participant.id}-card"}
+          class={[
+            "poker-card w-12 h-16 mx-auto rounded-lg flex items-center justify-center",
+            "text-lg font-bold",
+            cond do
+              @revealed? && @participant.vote ->
+                "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flipped"
+
+              @participant.vote ->
+                "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+
+              true ->
+                "bg-slate-700/50 border-2 border-dashed border-slate-600 text-slate-500"
+            end
+          ]}
+        >
+          <%= if @revealed? && @participant.vote do %>
+            {@participant.vote}
+          <% else %>
+            <%= if @participant.vote do %>
+              <span class="hero-check w-5 h-5"></span>
+            <% else %>
+              ?
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <p class={[
+        "text-sm font-medium truncate",
+        if(@participant.connected, do: "text-white", else: "text-slate-500")
+      ]}>
+        {@participant.name}
+        <span :if={@current_user?} class="text-blue-400">(you)</span>
+      </p>
+      <p :if={!@participant.connected} class="text-xs text-slate-500">disconnected</p>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the voting status indicator.
+
+  ## Examples
+
+      <.voting_status state={:voting} vote_count={3} total_voters={5} />
+  """
+  attr :state, :atom, required: true
+  attr :vote_count, :integer, default: 0
+  attr :total_voters, :integer, default: 0
+  attr :statistics, :map, default: nil
+
+  def voting_status(assigns) do
+    ~H"""
+    <div class="text-center mb-8">
+      <div :if={@state == :voting} class="space-y-2">
+        <p class="text-slate-400">
+          <span class="text-2xl font-bold text-white">{@vote_count}</span>
+          <span class="text-slate-500">/ {@total_voters}</span> voted
+        </p>
+        <div class="flex items-center justify-center gap-2">
+          <div class="h-2 rounded-full bg-slate-700 w-48 overflow-hidden">
+            <div
+              class="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-300"
+              style={"width: #{if @total_voters > 0, do: @vote_count / @total_voters * 100, else: 0}%"}
+            />
+          </div>
+        </div>
+      </div>
+      <div :if={@state == :revealed} class="space-y-4">
+        <p class="text-lg font-semibold text-emerald-400">Votes Revealed!</p>
+        <.vote_statistics :if={@statistics} statistics={@statistics} />
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders vote statistics after reveal.
+  """
+  attr :statistics, :map, required: true
+
+  def vote_statistics(assigns) do
+    ~H"""
+    <div id="vote-statistics" class="space-y-4">
+      <div :if={@statistics.average} id="vote-average" class="text-center">
+        <span class="text-sm text-slate-400">Average:</span>
+        <span class="text-2xl font-bold text-white ml-2">
+          {Float.round(@statistics.average, 1)}
+        </span>
+      </div>
+
+      <div
+        :if={@statistics.distribution && map_size(@statistics.distribution) > 0}
+        id="vote-distribution"
+        class="flex justify-center gap-4 flex-wrap"
+      >
+        <%= for {card, count} <- Enum.sort_by(@statistics.distribution, fn {k, _} -> k end) do %>
+          <div class="text-center">
+            <div class="w-10 h-14 rounded bg-slate-700/50 flex items-center justify-center text-white font-bold mb-1">
+              {card}
+            </div>
+            <span class="text-sm text-slate-400">{count}x</span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the game control buttons (reveal/reset).
+
+  ## Examples
+
+      <.game_controls state={:voting} all_voted?={true} />
+  """
+  attr :state, :atom, required: true
+  attr :all_voted?, :boolean, default: false
+
+  def game_controls(assigns) do
+    ~H"""
+    <div class="border-t border-slate-700/50 bg-slate-900/50 p-4">
+      <div class="max-w-4xl mx-auto flex items-center justify-center gap-4">
+        <button
+          :if={@state == :voting}
+          id="reveal-btn"
+          phx-click="reveal"
+          disabled={!@all_voted?}
+          class={[
+            "inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold",
+            "transition-all duration-150",
+            if(@all_voted?,
+              do: "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25",
+              else: "bg-slate-700 text-slate-400 cursor-not-allowed"
+            )
+          ]}
+        >
+          <span class="hero-eye w-5 h-5"></span> Reveal Votes
+        </button>
+
+        <button
+          :if={@state == :revealed}
+          id="reset-btn"
+          phx-click="reset"
+          class={[
+            "inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold",
+            "bg-blue-500 hover:bg-blue-400 text-white",
+            "shadow-lg shadow-blue-500/25",
+            "transition-all duration-150"
+          ]}
+        >
+          <span class="hero-arrow-path w-5 h-5"></span> New Round
+        </button>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the invite modal.
+
+  ## Examples
+
+      <.invite_modal game_url="https://example.com/games/abc123" />
+  """
+  attr :game_url, :string, required: true
+  attr :show, :boolean, default: false
+
+  def invite_modal(assigns) do
+    ~H"""
+    <div
+      :if={@show}
+      id="invite-modal"
+      class="fixed inset-0 z-50 flex items-center justify-center"
+      phx-mounted={JS.transition({"ease-out duration-200", "opacity-0", "opacity-100"})}
+    >
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" phx-click="close_invite"></div>
+
+      <div class="relative bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+        <button
+          id="close-invite-btn"
+          type="button"
+          phx-click="close_invite"
+          class="absolute top-4 right-4 text-slate-400 hover:text-white"
+        >
+          <span class="hero-x-mark w-6 h-6"></span>
+        </button>
+
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500/10 mb-4">
+            <span class="hero-link w-6 h-6 text-blue-400"></span>
+          </div>
+          <h2 class="text-xl font-bold text-white">Invite Team Members</h2>
+          <p class="text-sm text-slate-400 mt-1">Share this link to invite others to join</p>
+        </div>
+
+        <div class="space-y-4">
+          <div class="flex gap-2">
+            <input
+              type="text"
+              id="invite-link"
+              value={@game_url}
+              readonly
+              class="flex-1 px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 text-white text-sm"
+            />
+            <button
+              id="copy-link-btn"
+              type="button"
+              phx-click={JS.dispatch("phx:copy", to: "#invite-link")}
+              class="px-4 py-3 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-medium transition-all"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the game header with title and controls.
+  """
+  attr :game, :map, required: true
+
+  def game_header(assigns) do
+    ~H"""
+    <header class="border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
+      <div class="max-w-7xl mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1
+              id="game-title"
+              class="text-xl font-bold text-white"
+              style="font-family: var(--font-display);"
+            >
+              {@game.name}
+            </h1>
+            <p class="text-sm text-slate-400">
+              {Poker.deck_display_name(@game.deck_type)} •
+              <span :if={@game.story_name} class="text-blue-400">{@game.story_name}</span>
+              <span :if={!@game.story_name} class="text-slate-500">No story set</span>
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              id="invite-btn"
+              type="button"
+              phx-click="show_invite"
+              class={[
+                "inline-flex items-center gap-2 px-4 py-2 rounded-lg",
+                "bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white",
+                "border border-slate-600/50",
+                "transition-all duration-150"
+              ]}
+            >
+              <span class="hero-link w-4 h-4"></span> Invite
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+    """
+  end
+
+  @doc """
+  Renders the poker table with all participants.
+  """
+  attr :voters, :list, required: true
+  attr :spectators, :list, required: true
+  attr :current_participant_id, :string, required: true
+  attr :game_state, :atom, required: true
+  attr :vote_count, :integer, required: true
+  attr :total_voters, :integer, required: true
+  attr :statistics, :map, default: nil
+
+  def poker_table(assigns) do
+    ~H"""
+    <div id="poker-table" class="flex-1 flex items-center justify-center p-8">
+      <div class="w-full max-w-4xl">
+        <.voting_status
+          state={@game_state}
+          vote_count={@vote_count}
+          total_voters={@total_voters}
+          statistics={@statistics}
+        />
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+          <.participant_card
+            :for={voter <- @voters}
+            participant={voter}
+            current_user?={voter.id == @current_participant_id}
+            revealed?={@game_state == :revealed}
+          />
+        </div>
+
+        <div :if={@spectators != []} class="text-center text-sm text-slate-500">
+          <span class="hero-eye w-4 h-4 inline"></span>
+          <span class="ml-1">
+            Spectators: {Enum.map(@spectators, & &1.name) |> Enum.join(", ")}
+          </span>
+        </div>
+      </div>
+    </div>
+    """
+  end
+end
