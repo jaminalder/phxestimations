@@ -26,7 +26,7 @@ defmodule PhxestimationsWeb.GameLive.New do
         {:noreply,
          socket
          |> put_flash(:info, "Game created successfully!")
-         |> push_navigate(to: "/games/#{game_id}/join")}
+         |> push_navigate(to: ~p"/games/#{game_id}/join")}
 
       {:error, _reason} ->
         {:noreply, put_flash(socket, :error, "Failed to create game. Please try again.")}

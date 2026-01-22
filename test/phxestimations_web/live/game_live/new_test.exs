@@ -39,40 +39,43 @@ defmodule PhxestimationsWeb.GameLive.NewTest do
     test "creates game with fibonacci deck and redirects to join", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/games/new")
 
-      result =
+      {:ok, _view, html} =
         view
         |> form("#new-game-form", %{name: "Test Game", deck_type: "fibonacci"})
         |> render_submit()
+        |> follow_redirect(conn)
 
-      # Should redirect to join page (path pattern: /games/:id/join)
-      assert {:error, {:live_redirect, %{to: "/games/" <> rest}}} = result
-      assert String.ends_with?(rest, "/join")
+      assert html =~ "Join Game"
+      assert html =~ "Test Game"
+      assert html =~ "Fibonacci"
     end
 
     test "creates game with tshirt deck and redirects to join", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/games/new")
 
-      result =
+      {:ok, _view, html} =
         view
         |> form("#new-game-form", %{name: "Sizing Session", deck_type: "tshirt"})
         |> render_submit()
+        |> follow_redirect(conn)
 
-      # Should redirect to join page
-      assert {:error, {:live_redirect, %{to: "/games/" <> rest}}} = result
-      assert String.ends_with?(rest, "/join")
+      assert html =~ "Join Game"
+      assert html =~ "Sizing Session"
+      assert html =~ "T-Shirt"
     end
 
     test "creates game with empty name (auto-generates)", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/games/new")
 
-      result =
+      {:ok, _view, html} =
         view
         |> form("#new-game-form", %{name: "", deck_type: "fibonacci"})
         |> render_submit()
+        |> follow_redirect(conn)
 
-      # Should redirect to join page
-      assert {:error, {:live_redirect, %{to: "/games/" <> rest}}} = result
-      assert String.ends_with?(rest, "/join")
+      # Should be on join page with auto-generated game name
+      assert html =~ "Join Game"
+      assert html =~ "Fibonacci"
     end
   end
 end

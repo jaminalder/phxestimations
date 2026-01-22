@@ -8,6 +8,7 @@ defmodule PhxestimationsWeb.Router do
     plug :put_root_layout, html: {PhxestimationsWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug PhxestimationsWeb.Plugs.ParticipantSession
   end
 
   pipeline :api do
@@ -19,6 +20,8 @@ defmodule PhxestimationsWeb.Router do
 
     live "/", HomeLive, :index
     live "/games/new", GameLive.New, :new
+    live "/games/:id/join", GameLive.Join, :join
+    live "/games/:id", GameLive.Show, :show
   end
 
   # Other scopes may use custom stacks.
