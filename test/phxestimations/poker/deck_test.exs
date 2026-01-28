@@ -22,10 +22,10 @@ defmodule Phxestimations.Poker.DeckTest do
       assert "13" in cards
       assert "21" in cards
       assert "34" in cards
-      assert "55" in cards
-      assert "89" in cards
+      assert "∞" in cards
       assert "?" in cards
       assert "coffee" in cards
+      assert "bug" in cards
       assert length(cards) == 13
     end
 
@@ -38,9 +38,11 @@ defmodule Phxestimations.Poker.DeckTest do
       assert "L" in cards
       assert "XL" in cards
       assert "XXL" in cards
+      assert "∞" in cards
       assert "?" in cards
       assert "coffee" in cards
-      assert length(cards) == 8
+      assert "bug" in cards
+      assert length(cards) == 10
     end
   end
 
@@ -78,12 +80,14 @@ defmodule Phxestimations.Poker.DeckTest do
       assert Deck.numeric_value("1") == 1
       assert Deck.numeric_value("5") == 5
       assert Deck.numeric_value("13") == 13
-      assert Deck.numeric_value("89") == 89
+      assert Deck.numeric_value("34") == 34
     end
 
     test "returns nil for non-numeric cards" do
       assert Deck.numeric_value("?") == nil
       assert Deck.numeric_value("coffee") == nil
+      assert Deck.numeric_value("∞") == nil
+      assert Deck.numeric_value("bug") == nil
       assert Deck.numeric_value("XL") == nil
       assert Deck.numeric_value("invalid") == nil
     end

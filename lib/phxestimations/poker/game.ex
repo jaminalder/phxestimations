@@ -7,7 +7,7 @@ defmodule Phxestimations.Poker.Game do
   - `:revealed` - All votes are visible and statistics are shown
   """
 
-  alias Phxestimations.Poker.{Deck, Participant}
+  alias Phxestimations.Poker.{Avatar, Deck, Participant}
 
   @type state :: :voting | :revealed
 
@@ -18,6 +18,7 @@ defmodule Phxestimations.Poker.Game do
           state: state(),
           story_name: String.t() | nil,
           participants: %{String.t() => Participant.t()},
+          used_avatars: MapSet.t(pos_integer()),
           created_at: DateTime.t()
         }
 
@@ -29,7 +30,8 @@ defmodule Phxestimations.Poker.Game do
     :created_at,
     state: :voting,
     story_name: nil,
-    participants: %{}
+    participants: %{},
+    used_avatars: MapSet.new()
   ]
 
   @doc """
@@ -47,18 +49,65 @@ defmodule Phxestimations.Poker.Game do
 
   @doc """
   Adds a participant to the game.
+
+  If the participant has an avatar_id, it will be added to used_avatars.
   """
   @spec add_participant(t(), Participant.t()) :: t()
   def add_participant(game, participant) do
-    %{game | participants: Map.put(game.participants, participant.id, participant)}
+    game = %{game | participants: Map.put(game.participants, participant.id, participant)}
+
+    if participant.avatar_id do
+      claim_avatar(game, participant.avatar_id)
+    else
+      game
+    end
   end
 
   @doc """
   Removes a participant from the game.
+
+  If the participant had an avatar, it will be released for others to use.
   """
   @spec remove_participant(t(), String.t()) :: t()
   def remove_participant(game, participant_id) do
-    %{game | participants: Map.delete(game.participants, participant_id)}
+    case Map.get(game.participants, participant_id) do
+      nil ->
+        game
+
+      participant ->
+        game = %{game | participants: Map.delete(game.participants, participant_id)}
+
+        if participant.avatar_id do
+          release_avatar(game, participant.avatar_id)
+        else
+          game
+        end
+    end
+  end
+
+  @doc """
+  Returns the list of available avatar IDs (not currently in use).
+  """
+  @spec available_avatars(t()) :: [pos_integer()]
+  def available_avatars(game) do
+    Avatar.all_ids()
+    |> Enum.reject(&MapSet.member?(game.used_avatars, &1))
+  end
+
+  @doc """
+  Claims an avatar by adding it to the used_avatars set.
+  """
+  @spec claim_avatar(t(), pos_integer()) :: t()
+  def claim_avatar(game, avatar_id) do
+    %{game | used_avatars: MapSet.put(game.used_avatars, avatar_id)}
+  end
+
+  @doc """
+  Releases an avatar by removing it from the used_avatars set.
+  """
+  @spec release_avatar(t(), pos_integer()) :: t()
+  def release_avatar(game, avatar_id) do
+    %{game | used_avatars: MapSet.delete(game.used_avatars, avatar_id)}
   end
 
   @doc """

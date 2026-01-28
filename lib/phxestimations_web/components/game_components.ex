@@ -7,9 +7,122 @@ defmodule PhxestimationsWeb.GameComponents do
 
   alias Phoenix.LiveView.JS
   alias Phxestimations.Poker
+  alias Phxestimations.Poker.Deck
+
+  # ============================================================================
+  # Avatar Components
+  # ============================================================================
+
+  @doc """
+  Renders a Dicebear bottts avatar image.
+
+  ## Sizes
+    - `:sm` - 32x32 (8)
+    - `:md` - 48x48 (12) - default
+    - `:lg` - 64x64 (16)
+
+  ## Examples
+
+      <.avatar avatar_id={1} />
+      <.avatar avatar_id={3} size={:lg} />
+  """
+  attr :avatar_id, :integer, required: true
+  attr :size, :atom, default: :md, values: [:sm, :md, :lg]
+  attr :class, :string, default: ""
+
+  def avatar(assigns) do
+    size_class =
+      case assigns.size do
+        :sm -> "w-8 h-8"
+        :md -> "w-12 h-12"
+        :lg -> "w-16 h-16"
+      end
+
+    assigns = assign(assigns, :size_class, size_class)
+
+    ~H"""
+    <img
+      src={Poker.avatar_url(@avatar_id)}
+      alt="Avatar"
+      class={["rounded-full bg-slate-700", @size_class, @class]}
+    />
+    """
+  end
+
+  @doc """
+  Renders an avatar selector showing all available avatars.
+
+  Displays 7 avatars in a row with visual indicators for availability and selection.
+
+  ## Examples
+
+      <.avatar_selector
+        selected_avatar={3}
+        available_avatars={[1, 2, 3, 5, 7]}
+        on_select="select_avatar"
+      />
+  """
+  attr :selected_avatar, :integer, default: nil
+  attr :available_avatars, :list, required: true
+  attr :on_select, :string, default: "select_avatar"
+
+  def avatar_selector(assigns) do
+    all_ids = Poker.avatar_ids()
+    assigns = assign(assigns, :all_ids, all_ids)
+
+    ~H"""
+    <div class="flex flex-wrap justify-center gap-3">
+      <%= for id <- @all_ids do %>
+        <% available? = id in @available_avatars %>
+        <% selected? = @selected_avatar == id %>
+        <button
+          id={"avatar-#{id}"}
+          type="button"
+          phx-click={@on_select}
+          phx-value-avatar-id={id}
+          disabled={!available?}
+          class={[
+            "relative p-1 rounded-full transition-all duration-150",
+            "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-slate-800",
+            cond do
+              selected? ->
+                "ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-800"
+
+              !available? ->
+                "opacity-40 cursor-not-allowed"
+
+              true ->
+                "hover:scale-110 cursor-pointer"
+            end
+          ]}
+        >
+          <.avatar avatar_id={id} size={:md} />
+          <div
+            :if={!available?}
+            class="absolute inset-0 flex items-center justify-center bg-slate-900/60 rounded-full"
+          >
+            <span class="text-xs text-slate-400 font-medium">Taken</span>
+          </div>
+          <div
+            :if={selected?}
+            class="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center"
+          >
+            <span class="hero-check w-3 h-3 text-white"></span>
+          </div>
+        </button>
+      <% end %>
+    </div>
+    """
+  end
+
+  # ============================================================================
+  # Card Components
+  # ============================================================================
 
   @doc """
   Renders a poker card that can be selected for voting.
+
+  Special cards (?, coffee, infinity, bug) display icons instead of text.
 
   ## Examples
 
@@ -20,6 +133,9 @@ defmodule PhxestimationsWeb.GameComponents do
   attr :disabled, :boolean, default: false
 
   def poker_card(assigns) do
+    icon = Deck.card_icon(assigns.card)
+    assigns = assign(assigns, :icon, icon)
+
     ~H"""
     <button
       id={"card-#{@card}"}
@@ -27,7 +143,7 @@ defmodule PhxestimationsWeb.GameComponents do
       phx-value-card={@card}
       disabled={@disabled}
       class={[
-        "w-14 h-20 rounded-lg font-bold text-lg",
+        "w-14 h-20 rounded-lg font-bold text-lg flex items-center justify-center",
         "transition-all duration-150",
         "focus:outline-none focus:ring-2 focus:ring-blue-400",
         if(@disabled, do: "opacity-50 cursor-not-allowed"),
@@ -39,8 +155,30 @@ defmodule PhxestimationsWeb.GameComponents do
         unless(@disabled, do: "hover:-translate-y-1")
       ]}
     >
-      {@card}
+      <.card_value card={@card} icon={@icon} />
     </button>
+    """
+  end
+
+  @doc """
+  Renders the value content for a card, with icon support for special cards.
+  """
+  attr :card, :string, required: true
+  attr :icon, :any, default: nil
+  attr :class, :string, default: "w-6 h-6"
+
+  def card_value(assigns) do
+    ~H"""
+    <%= case @icon do %>
+      <% :infinity -> %>
+        <svg class={@class} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" />
+        </svg>
+      <% nil -> %>
+        {@card}
+      <% icon -> %>
+        <span class={[icon, @class]}></span>
+    <% end %>
     """
   end
 
@@ -78,6 +216,8 @@ defmodule PhxestimationsWeb.GameComponents do
   @doc """
   Renders a participant's card on the poker table.
 
+  Shows the participant's avatar with a card overlay indicator at the bottom-right.
+
   ## Examples
 
       <.participant_card participant={participant} current_user?={true} revealed?={false} />
@@ -87,22 +227,49 @@ defmodule PhxestimationsWeb.GameComponents do
   attr :revealed?, :boolean, default: false
 
   def participant_card(assigns) do
+    icon =
+      if assigns.revealed? && assigns.participant.vote do
+        Deck.card_icon(assigns.participant.vote)
+      else
+        nil
+      end
+
+    assigns = assign(assigns, :vote_icon, icon)
+
     ~H"""
     <div
       id={"participant-#{@participant.id}"}
       class={[
-        "relative p-4 rounded-xl text-center animate-fade-in-up",
-        "bg-slate-800/50 border",
-        if(@current_user?, do: "border-blue-500/50", else: "border-slate-700/50"),
+        "p-4 rounded-xl animate-fade-in-up",
+        "bg-slate-800/50 border-2",
+        if(@current_user?, do: "border-blue-500", else: "border-slate-700/50"),
         if(!@participant.connected, do: "opacity-50")
       ]}
     >
-      <div class="mb-3">
+      <p class={[
+        "text-sm font-medium truncate mb-3",
+        if(@participant.connected, do: "text-white", else: "text-slate-500")
+      ]}>
+        {@participant.name}
+      </p>
+      <p :if={!@participant.connected} class="text-xs text-slate-500 -mt-2 mb-2">disconnected</p>
+
+      <div class="flex items-center gap-3">
+        <div class="shrink-0">
+          <%= if @participant.avatar_id do %>
+            <.avatar avatar_id={@participant.avatar_id} size={:lg} />
+          <% else %>
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-2xl font-bold text-white">
+              {String.first(@participant.name) |> String.upcase()}
+            </div>
+          <% end %>
+        </div>
+
         <div
           id={"participant-#{@participant.id}-card"}
           class={[
-            "poker-card w-12 h-16 mx-auto rounded-lg flex items-center justify-center",
-            "text-lg font-bold",
+            "w-12 h-16 rounded-lg flex items-center justify-center",
+            "text-sm font-bold shadow-lg",
             cond do
               @revealed? && @participant.vote ->
                 "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white"
@@ -111,12 +278,12 @@ defmodule PhxestimationsWeb.GameComponents do
                 "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
 
               true ->
-                "bg-slate-700/50 border-2 border-dashed border-slate-600 text-slate-500"
+                "bg-slate-700 border border-slate-600 text-slate-400"
             end
           ]}
         >
           <%= if @revealed? && @participant.vote do %>
-            {@participant.vote}
+            <.card_value card={@participant.vote} icon={@vote_icon} class="w-5 h-5" />
           <% else %>
             <%= if @participant.vote do %>
               <span class="hero-check w-5 h-5"></span>
@@ -126,15 +293,6 @@ defmodule PhxestimationsWeb.GameComponents do
           <% end %>
         </div>
       </div>
-
-      <p class={[
-        "text-sm font-medium truncate",
-        if(@participant.connected, do: "text-white", else: "text-slate-500")
-      ]}>
-        {@participant.name}
-        <span :if={@current_user?} class="text-blue-400">(you)</span>
-      </p>
-      <p :if={!@participant.connected} class="text-xs text-slate-500">disconnected</p>
     </div>
     """
   end
@@ -365,13 +523,6 @@ defmodule PhxestimationsWeb.GameComponents do
     ~H"""
     <div id="poker-table" class="flex-1 flex items-center justify-center p-8">
       <div class="w-full max-w-4xl">
-        <.voting_status
-          state={@game_state}
-          vote_count={@vote_count}
-          total_voters={@total_voters}
-          statistics={@statistics}
-        />
-
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
           <.participant_card
             :for={voter <- @voters}
@@ -381,7 +532,14 @@ defmodule PhxestimationsWeb.GameComponents do
           />
         </div>
 
-        <div :if={@spectators != []} class="text-center text-sm text-slate-500">
+        <.voting_status
+          state={@game_state}
+          vote_count={@vote_count}
+          total_voters={@total_voters}
+          statistics={@statistics}
+        />
+
+        <div :if={@spectators != []} class="text-center text-sm text-slate-500 mt-6">
           <span class="hero-eye w-4 h-4 inline"></span>
           <span class="ml-1">
             Spectators: {Enum.map(@spectators, & &1.name) |> Enum.join(", ")}

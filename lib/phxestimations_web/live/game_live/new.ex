@@ -24,8 +24,16 @@ defmodule PhxestimationsWeb.GameLive.New do
            "player_name" => saved_name,
            "role" => "voter"
          }),
-       deck_types: deck_types
+       deck_types: deck_types,
+       selected_avatar: nil,
+       available_avatars: Poker.avatar_ids()
      )}
+  end
+
+  @impl true
+  def handle_event("select_avatar", %{"avatar-id" => avatar_id_str}, socket) do
+    avatar_id = String.to_integer(avatar_id_str)
+    {:noreply, assign(socket, :selected_avatar, avatar_id)}
   end
 
   @impl true
@@ -51,9 +59,17 @@ defmodule PhxestimationsWeb.GameLive.New do
           "spectator" -> :spectator
         end
 
+      avatar_id = socket.assigns.selected_avatar
+
       with {:ok, game_id} <- Poker.create_game(name, deck_type_atom),
            {:ok, _game} <-
-             Poker.join_game(game_id, socket.assigns.participant_id, player_name, role_atom) do
+             Poker.join_game(
+               game_id,
+               socket.assigns.participant_id,
+               player_name,
+               role_atom,
+               avatar_id
+             ) do
         {:noreply,
          socket
          |> put_flash(:info, "Game created successfully!")
@@ -166,6 +182,16 @@ defmodule PhxestimationsWeb.GameLive.New do
                     "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                     "transition-all duration-150"
                   ]}
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-3">
+                  Choose Your Avatar
+                </label>
+                <PhxestimationsWeb.GameComponents.avatar_selector
+                  selected_avatar={@selected_avatar}
+                  available_avatars={@available_avatars}
                 />
               </div>
 

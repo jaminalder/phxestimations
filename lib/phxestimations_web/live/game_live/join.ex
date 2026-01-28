@@ -11,13 +11,20 @@ defmodule PhxestimationsWeb.GameLive.Join do
         participant_id = ParticipantSession.get_participant_id(session)
         saved_name = ParticipantSession.get_participant_name(session) || ""
 
+        # Subscribe to get avatar availability updates
+        if connected?(socket), do: Poker.subscribe(game_id)
+
+        {:ok, available} = Poker.available_avatars(game_id)
+
         {:ok,
          assign(socket,
            page_title: "Join #{game.name}",
            game_id: game_id,
            game: game,
            participant_id: participant_id,
-           form: to_form(%{"name" => saved_name, "role" => "voter"})
+           form: to_form(%{"name" => saved_name, "role" => "voter"}),
+           selected_avatar: nil,
+           available_avatars: available
          )}
 
       {:error, :not_found} ->
@@ -26,6 +33,12 @@ defmodule PhxestimationsWeb.GameLive.Join do
          |> put_flash(:error, "Game not found")
          |> push_navigate(to: ~p"/")}
     end
+  end
+
+  @impl true
+  def handle_event("select_avatar", %{"avatar-id" => avatar_id_str}, socket) do
+    avatar_id = String.to_integer(avatar_id_str)
+    {:noreply, assign(socket, :selected_avatar, avatar_id)}
   end
 
   @impl true
@@ -41,11 +54,14 @@ defmodule PhxestimationsWeb.GameLive.Join do
           "spectator" -> :spectator
         end
 
+      avatar_id = socket.assigns.selected_avatar
+
       case Poker.join_game(
              socket.assigns.game_id,
              socket.assigns.participant_id,
              name,
-             role_atom
+             role_atom,
+             avatar_id
            ) do
         {:ok, _game} ->
           {:noreply,
@@ -57,6 +73,30 @@ defmodule PhxestimationsWeb.GameLive.Join do
       end
     end
   end
+
+  # Handle avatar availability updates when others join
+  @impl true
+  def handle_info({:participant_joined, _participant}, socket) do
+    {:ok, available} = Poker.available_avatars(socket.assigns.game_id)
+
+    # If our selected avatar was taken, deselect it
+    selected =
+      if socket.assigns.selected_avatar in available do
+        socket.assigns.selected_avatar
+      else
+        nil
+      end
+
+    {:noreply, assign(socket, available_avatars: available, selected_avatar: selected)}
+  end
+
+  def handle_info({:participant_left, _participant_id}, socket) do
+    {:ok, available} = Poker.available_avatars(socket.assigns.game_id)
+    {:noreply, assign(socket, :available_avatars, available)}
+  end
+
+  # Ignore other PubSub events
+  def handle_info(_msg, socket), do: {:noreply, socket}
 
   @impl true
   def render(assigns) do
@@ -106,6 +146,16 @@ defmodule PhxestimationsWeb.GameLive.Join do
                     "focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent",
                     "transition-all duration-150"
                   ]}
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-3">
+                  Choose Your Avatar
+                </label>
+                <PhxestimationsWeb.GameComponents.avatar_selector
+                  selected_avatar={@selected_avatar}
+                  available_avatars={@available_avatars}
                 />
               </div>
 

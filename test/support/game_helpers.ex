@@ -72,33 +72,38 @@ defmodule PhxestimationsWeb.GameHelpers do
   @doc """
   Creates a game and joins N voters via the Poker API.
 
-  Returns `%{game_id: String.t(), users: [%{conn: conn, participant_id: id, name: name}]}`.
+  Returns `%{game_id: String.t(), users: [%{conn: conn, participant_id: id, name: name, avatar_id: id | nil}]}`.
 
   ## Options
 
     * `:name` - game name (default: "Test Game")
     * `:deck_type` - deck type (default: :fibonacci)
     * `:names` - list of participant names (default: ["Alice", "Bob", "Charlie", ...])
+    * `:with_avatars` - assign avatars 1, 2, 3... to each user (default: false)
 
   ## Examples
 
       %{game_id: gid, users: users} = setup_game_with_voters(3)
       %{game_id: gid, users: users} = setup_game_with_voters(2, names: ["Foo", "Bar"])
+      %{game_id: gid, users: users} = setup_game_with_voters(3, with_avatars: true)
   """
   def setup_game_with_voters(count, opts \\ []) do
     game_name = Keyword.get(opts, :name, "Test Game")
     deck_type = Keyword.get(opts, :deck_type, :fibonacci)
     names = Keyword.get(opts, :names, default_names(count))
+    with_avatars = Keyword.get(opts, :with_avatars, false)
 
     game_id = create_test_game(game_name, deck_type)
 
     users =
       names
       |> Enum.take(count)
-      |> Enum.map(fn name ->
+      |> Enum.with_index(1)
+      |> Enum.map(fn {name, index} ->
         {conn, participant_id} = build_user_conn()
-        {:ok, _game} = Poker.join_game(game_id, participant_id, name, :voter)
-        %{conn: conn, participant_id: participant_id, name: name}
+        avatar_id = if with_avatars, do: index, else: nil
+        {:ok, _game} = Poker.join_game(game_id, participant_id, name, :voter, avatar_id)
+        %{conn: conn, participant_id: participant_id, name: name, avatar_id: avatar_id}
       end)
 
     %{game_id: game_id, users: users}
@@ -108,7 +113,7 @@ defmodule PhxestimationsWeb.GameHelpers do
   Creates a game with both voters and spectators.
 
   Returns `%{game_id: id, voters: [...], spectators: [...]}` where each entry
-  is `%{conn: conn, participant_id: id, name: name}`.
+  is `%{conn: conn, participant_id: id, name: name, avatar_id: id | nil}`.
 
   ## Options
 
@@ -116,11 +121,13 @@ defmodule PhxestimationsWeb.GameHelpers do
     * `:deck_type` - deck type (default: :fibonacci)
     * `:voter_names` - names for voters (defaults provided)
     * `:spectator_names` - names for spectators (defaults provided)
+    * `:with_avatars` - assign avatars to participants (default: false)
   """
   def setup_game_with_mixed(voter_count, spectator_count, opts \\ []) do
     game_name = Keyword.get(opts, :name, "Test Game")
     deck_type = Keyword.get(opts, :deck_type, :fibonacci)
     voter_names = Keyword.get(opts, :voter_names, default_names(voter_count))
+    with_avatars = Keyword.get(opts, :with_avatars, false)
 
     spectator_names =
       Keyword.get(opts, :spectator_names, default_spectator_names(spectator_count))
@@ -130,19 +137,23 @@ defmodule PhxestimationsWeb.GameHelpers do
     voters =
       voter_names
       |> Enum.take(voter_count)
-      |> Enum.map(fn name ->
+      |> Enum.with_index(1)
+      |> Enum.map(fn {name, index} ->
         {conn, participant_id} = build_user_conn()
-        {:ok, _game} = Poker.join_game(game_id, participant_id, name, :voter)
-        %{conn: conn, participant_id: participant_id, name: name}
+        avatar_id = if with_avatars, do: index, else: nil
+        {:ok, _game} = Poker.join_game(game_id, participant_id, name, :voter, avatar_id)
+        %{conn: conn, participant_id: participant_id, name: name, avatar_id: avatar_id}
       end)
 
     spectators =
       spectator_names
       |> Enum.take(spectator_count)
-      |> Enum.map(fn name ->
+      |> Enum.with_index(voter_count + 1)
+      |> Enum.map(fn {name, index} ->
         {conn, participant_id} = build_user_conn()
-        {:ok, _game} = Poker.join_game(game_id, participant_id, name, :spectator)
-        %{conn: conn, participant_id: participant_id, name: name}
+        avatar_id = if with_avatars, do: index, else: nil
+        {:ok, _game} = Poker.join_game(game_id, participant_id, name, :spectator, avatar_id)
+        %{conn: conn, participant_id: participant_id, name: name, avatar_id: avatar_id}
       end)
 
     %{game_id: game_id, voters: voters, spectators: spectators}

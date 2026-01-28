@@ -41,9 +41,21 @@ defmodule Phxestimations.Poker.GameServer do
 
   @doc """
   Adds a participant to the game.
+
+  The optional `avatar_id` parameter allows specifying a preset avatar (1-7).
   """
-  def join(game_id, participant_id, name, role) do
-    GenServer.call(via_tuple(game_id), {:join, participant_id, name, role})
+  def join(game_id, participant_id, name, role, avatar_id \\ nil) do
+    GenServer.call(via_tuple(game_id), {:join, participant_id, name, role, avatar_id})
+  end
+
+  @doc """
+  Returns the list of available avatar IDs for a game.
+  """
+  def available_avatars(game_id) do
+    case GenServer.whereis(via_tuple(game_id)) do
+      nil -> {:error, :not_found}
+      pid -> GenServer.call(pid, :available_avatars)
+    end
   end
 
   @doc """
@@ -110,13 +122,18 @@ defmodule Phxestimations.Poker.GameServer do
   end
 
   @impl true
-  def handle_call({:join, participant_id, name, role}, _from, state) do
-    participant = Participant.new(participant_id, name, role)
+  def handle_call({:join, participant_id, name, role, avatar_id}, _from, state) do
+    participant = Participant.new(participant_id, name, role, avatar_id)
     game = Game.add_participant(state.game, participant)
     state = %{state | game: game, last_activity: now()}
 
     broadcast(game, {:participant_joined, participant})
     {:reply, {:ok, game}, state}
+  end
+
+  @impl true
+  def handle_call(:available_avatars, _from, state) do
+    {:reply, {:ok, Game.available_avatars(state.game)}, state}
   end
 
   @impl true

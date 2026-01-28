@@ -22,10 +22,10 @@ defmodule PhxestimationsWeb.Integration.DeckTypesTest do
       assert has_element?(view, "#card-13")
       assert has_element?(view, "#card-21")
       assert has_element?(view, "#card-34")
-      assert has_element?(view, "#card-55")
-      assert has_element?(view, "#card-89")
+      assert has_element?(view, "#card-∞")
       assert has_element?(view, "#card-\\?")
       assert has_element?(view, "#card-coffee")
+      assert has_element?(view, "#card-bug")
     end
 
     test "fibonacci deck calculates numeric average", %{game_id: game_id, user: u1} do
@@ -60,8 +60,10 @@ defmodule PhxestimationsWeb.Integration.DeckTypesTest do
       assert has_element?(view, "#card-L")
       assert has_element?(view, "#card-XL")
       assert has_element?(view, "#card-XXL")
+      assert has_element?(view, "#card-∞")
       assert has_element?(view, "#card-\\?")
       assert has_element?(view, "#card-coffee")
+      assert has_element?(view, "#card-bug")
     end
 
     test "t-shirt deck does NOT show vote average", %{game_id: game_id, user: u1} do

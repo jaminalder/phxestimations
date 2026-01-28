@@ -13,22 +13,26 @@ defmodule Phxestimations.Poker.Participant do
           id: String.t(),
           name: String.t(),
           role: role(),
+          avatar_id: pos_integer() | nil,
           vote: String.t() | nil,
           connected: boolean()
         }
 
   @enforce_keys [:id, :name, :role]
-  defstruct [:id, :name, :role, vote: nil, connected: true]
+  defstruct [:id, :name, :role, :avatar_id, vote: nil, connected: true]
 
   @doc """
   Creates a new participant.
+
+  The optional `avatar_id` parameter allows specifying a preset avatar (1-7).
   """
-  @spec new(String.t(), String.t(), role()) :: t()
-  def new(id, name, role) when role in [:voter, :spectator] do
+  @spec new(String.t(), String.t(), role(), pos_integer() | nil) :: t()
+  def new(id, name, role, avatar_id \\ nil) when role in [:voter, :spectator] do
     %__MODULE__{
       id: id,
       name: name,
-      role: role
+      role: role,
+      avatar_id: avatar_id
     }
   end
 

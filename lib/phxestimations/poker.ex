@@ -6,7 +6,7 @@ defmodule Phxestimations.Poker do
   abstracting away the implementation details of game state management.
   """
 
-  alias Phxestimations.Poker.{Deck, Game, GameServer, GameSupervisor}
+  alias Phxestimations.Poker.{Avatar, Deck, Game, GameServer, GameSupervisor}
 
   @pubsub Phxestimations.PubSub
 
@@ -69,15 +69,25 @@ defmodule Phxestimations.Poker do
     - participant_id: Unique ID for this participant (usually from session)
     - name: Display name
     - role: `:voter` or `:spectator`
+    - avatar_id: Optional avatar ID (1-7)
 
   ## Examples
 
       {:ok, game} = Poker.join_game("abc123", "user-uuid", "Alice", :voter)
+      {:ok, game} = Poker.join_game("abc123", "user-uuid", "Alice", :voter, 3)
   """
-  @spec join_game(String.t(), String.t(), String.t(), :voter | :spectator) ::
+  @spec join_game(String.t(), String.t(), String.t(), :voter | :spectator, pos_integer() | nil) ::
           {:ok, Game.t()} | {:error, term()}
-  def join_game(game_id, participant_id, name, role) do
-    GameServer.join(game_id, participant_id, name, role)
+  def join_game(game_id, participant_id, name, role, avatar_id \\ nil) do
+    GameServer.join(game_id, participant_id, name, role, avatar_id)
+  end
+
+  @doc """
+  Returns available avatar IDs for a game (not currently in use by other participants).
+  """
+  @spec available_avatars(String.t()) :: {:ok, [pos_integer()]} | {:error, :not_found}
+  def available_avatars(game_id) do
+    GameServer.available_avatars(game_id)
   end
 
   @doc """
@@ -191,6 +201,34 @@ defmodule Phxestimations.Poker do
   """
   @spec deck_display_name(Deck.deck_type()) :: String.t()
   defdelegate deck_display_name(deck_type), to: Deck, as: :display_name
+
+  # ============================================================================
+  # Avatar Utilities
+  # ============================================================================
+
+  @doc """
+  Returns all avatar IDs.
+  """
+  @spec avatar_ids() :: [pos_integer()]
+  defdelegate avatar_ids, to: Avatar, as: :all_ids
+
+  @doc """
+  Returns all avatar configurations.
+  """
+  @spec avatars() :: [Avatar.t()]
+  defdelegate avatars, to: Avatar, as: :all
+
+  @doc """
+  Returns the avatar configuration for the given ID.
+  """
+  @spec get_avatar(pos_integer()) :: Avatar.t() | nil
+  defdelegate get_avatar(id), to: Avatar, as: :get
+
+  @doc """
+  Returns the Dicebear URL for the given avatar ID.
+  """
+  @spec avatar_url(pos_integer()) :: String.t() | nil
+  defdelegate avatar_url(id), to: Avatar, as: :url
 
   # ============================================================================
   # ID Generation

@@ -10,8 +10,8 @@ defmodule Phxestimations.Poker.Deck do
   @type deck_type :: :fibonacci | :tshirt
   @type card :: String.t()
 
-  @fibonacci ["0", "1", "2", "3", "5", "8", "13", "21", "34", "55", "89", "?", "coffee"]
-  @tshirt ["XS", "S", "M", "L", "XL", "XXL", "?", "coffee"]
+  @fibonacci ["0", "1", "2", "3", "5", "8", "13", "21", "34", "∞", "?", "coffee", "bug"]
+  @tshirt ["XS", "S", "M", "L", "XL", "XXL", "∞", "?", "coffee", "bug"]
 
   @fibonacci_values %{
     "0" => 0,
@@ -22,9 +22,7 @@ defmodule Phxestimations.Poker.Deck do
     "8" => 8,
     "13" => 13,
     "21" => 21,
-    "34" => 34,
-    "55" => 55,
-    "89" => 89
+    "34" => 34
   }
 
   @doc """
@@ -67,4 +65,16 @@ defmodule Phxestimations.Poker.Deck do
   @spec display_name(deck_type()) :: String.t()
   def display_name(:fibonacci), do: "Fibonacci"
   def display_name(:tshirt), do: "T-Shirt Sizes"
+
+  @doc """
+  Returns the icon name for special cards, or nil for regular number cards.
+
+  Icons are hero icon names or `:infinity` for the custom infinity symbol.
+  """
+  @spec card_icon(card()) :: String.t() | :infinity | nil
+  def card_icon("?"), do: "hero-question-mark-circle"
+  def card_icon("coffee"), do: "hero-pause-circle"
+  def card_icon("∞"), do: :infinity
+  def card_icon("bug"), do: "hero-bug-ant"
+  def card_icon(_), do: nil
 end

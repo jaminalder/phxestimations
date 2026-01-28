@@ -81,7 +81,7 @@ defmodule PhxestimationsWeb.GameComponentsTest do
       assert html =~ "from-emerald-500"
     end
 
-    test "marks current user" do
+    test "marks current user with distinct border" do
       participant = Participant.new("p1", "Me", :voter)
 
       html =
@@ -91,8 +91,10 @@ defmodule PhxestimationsWeb.GameComponentsTest do
           revealed?: false
         )
 
-      assert html =~ "(you)"
-      assert html =~ "border-blue-500/50"
+      # Current user indicated by solid blue border (no opacity)
+      assert html =~ "border-blue-500"
+      refute html =~ "border-blue-500/50"
+      refute html =~ "(you)"
     end
 
     test "shows disconnected state" do
