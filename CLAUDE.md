@@ -12,6 +12,8 @@ A real-time Scrum Planning Poker application built with Phoenix LiveView.
 | `mix test --stale` | Run only tests affected by changes |
 | `mix precommit` | **Required before finishing** - compile, format, test |
 | `mix format` | Format all code |
+| `mix smoke_test` | Quick API-level smoke tests (no ExUnit) |
+| `mix test test/phxestimations_web/integration/` | Multi-user integration tests |
 
 ## Documentation Map
 
@@ -53,6 +55,35 @@ lib/
 - No Ecto/database
 - No authentication
 - State managed via GenServer + PubSub
+
+---
+
+## AI Agent Tooling
+
+### Console Module
+
+Interactive game manipulation from IEx (`iex -S mix phx.server`):
+
+```elixir
+alias Phxestimations.Dev.Console, as: C
+C.demo()            # Full 2-round demo
+C.quick_game(3)     # Create game + 3 voters
+C.list_games()      # List all active games
+C.inspect_game(id)  # Pretty-print game state
+```
+
+See `lib/phxestimations/dev/console.ex` for full API.
+
+### Test Helpers (GameHelpers)
+
+`test/support/game_helpers.ex` — auto-imported in ConnCase. Provides:
+- `build_user_conn/0`, `setup_game_with_voters/2`, `setup_game_with_mixed/3`
+- `vote_via_view/2`, `reveal_via_view/1`, `reset_via_view/1`
+- `assert_voting_state/1`, `assert_revealed_state/1`, `assert_average_displayed/2`
+
+### Integration Tests
+
+`test/phxestimations_web/integration/` — multi-user LiveView tests covering game lifecycle, voting, spectators, stories, invites, edge cases, and deck types.
 
 ---
 

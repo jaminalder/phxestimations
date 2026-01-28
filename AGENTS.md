@@ -282,6 +282,102 @@ If it doesn’t work locally with `mix precommit`, it’s broken.
 
 ---
 
+## 13. AI Agent Console Workflow
+
+### Console module
+
+The `Phxestimations.Dev.Console` module provides an IEx helper for interactive game manipulation and state inspection. Use it during development and debugging:
+
+```bash
+iex -S mix phx.server
+```
+
+```elixir
+alias Phxestimations.Dev.Console, as: C
+
+# Quick actions
+game_id = C.create("Sprint 42", :fibonacci)
+pid = C.join(game_id, "Alice")
+C.vote(game_id, pid, "5")
+C.reveal(game_id)
+C.reset(game_id)
+C.story(game_id, "PROJ-101")
+
+# State inspection
+C.inspect_game(game_id)
+C.participants(game_id)
+C.votes(game_id)
+C.list_games()
+
+# Predefined scenarios
+{gid, pids} = C.quick_game(3)
+C.scenario_consensus()       # All agree on "5"
+C.scenario_disagreement()    # Wide spread (1, 5, 13, 34)
+C.scenario_tshirt()          # T-shirt deck
+C.demo()                     # Full 2-round lifecycle
+```
+
+### Smoke tests
+
+Quick verification of core flows without ExUnit:
+
+```bash
+mix smoke_test
+```
+
+Reports PASS/FAIL per test case. Exits with non-zero code on failure.
+
+### Integration tests
+
+Multi-user LiveView integration tests covering full game lifecycles:
+
+```bash
+mix test test/phxestimations_web/integration/
+```
+
+Individual test files:
+
+* `game_lifecycle_test.exs` – Full create/join/vote/reveal/reset
+* `multi_user_voting_test.exs` – 4-user voting with propagation
+* `spectator_mode_test.exs` – Spectator visibility and restrictions
+* `story_flow_test.exs` – Story name set/clear across rounds
+* `invite_flow_test.exs` – Invite modal open/close/URL
+* `edge_cases_test.exs` – Join mid-vote, join after reveal, empty reveal
+* `deck_types_test.exs` – Fibonacci and T-shirt card presence and average
+
+### GameHelpers
+
+`PhxestimationsWeb.GameHelpers` (in `test/support/game_helpers.ex`) is auto-imported in all ConnCase tests. Key functions:
+
+* `build_user_conn/0` – Creates session-initialized conn, returns `{conn, participant_id}`
+* `setup_game_with_voters/2` – Creates game + N voters, returns game_id and user list
+* `setup_game_with_mixed/3` – Creates game with voters and spectators
+* `connect_users_to_game/2` – Mounts LiveView for each user
+* `vote_via_view/2`, `reveal_via_view/1`, `reset_via_view/1` – LiveView action helpers
+* `assert_voting_state/1`, `assert_revealed_state/1` – State assertions
+* `assert_average_displayed/2`, `refute_average_displayed/1` – Statistics assertions
+
+### PubSub debugging
+
+Subscribe to game events in IEx:
+
+```elixir
+Phxestimations.Poker.subscribe(game_id)
+flush()  # See received events
+```
+
+### LazyHTML debugging in tests
+
+When selectors fail:
+
+```elixir
+html = render(view)
+document = LazyHTML.from_fragment(html)
+IO.inspect(LazyHTML.filter(document, "#your-selector"))
+```
+
+---
+
 ## Final rule
 
 If unsure, **choose the simpler, more explicit, more testable solution**.
