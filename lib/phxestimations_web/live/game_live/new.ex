@@ -2,9 +2,13 @@ defmodule PhxestimationsWeb.GameLive.New do
   use PhxestimationsWeb, :live_view
 
   alias Phxestimations.Poker
+  alias PhxestimationsWeb.Plugs.ParticipantSession
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
+    participant_id = ParticipantSession.get_participant_id(session)
+    saved_name = ParticipantSession.get_participant_name(session) || ""
+
     deck_types =
       Poker.deck_types()
       |> Enum.map(fn type -> {Poker.deck_display_name(type), type} end)
@@ -12,24 +16,52 @@ defmodule PhxestimationsWeb.GameLive.New do
     {:ok,
      assign(socket,
        page_title: "New Game",
-       form: to_form(%{"name" => "", "deck_type" => "fibonacci"}),
+       participant_id: participant_id,
+       form:
+         to_form(%{
+           "name" => "",
+           "deck_type" => "fibonacci",
+           "player_name" => saved_name,
+           "role" => "voter"
+         }),
        deck_types: deck_types
      )}
   end
 
   @impl true
-  def handle_event("create_game", %{"name" => name, "deck_type" => deck_type}, socket) do
-    deck_type_atom = String.to_existing_atom(deck_type)
+  def handle_event(
+        "create_game",
+        %{"name" => name, "deck_type" => deck_type, "player_name" => player_name, "role" => role},
+        socket
+      ) do
+    player_name = String.trim(player_name)
 
-    case Poker.create_game(name, deck_type_atom) do
-      {:ok, game_id} ->
+    if player_name == "" do
+      {:noreply, put_flash(socket, :error, "Please enter your name")}
+    else
+      deck_type_atom =
+        case deck_type do
+          "fibonacci" -> :fibonacci
+          "tshirt" -> :tshirt
+        end
+
+      role_atom =
+        case role do
+          "voter" -> :voter
+          "spectator" -> :spectator
+        end
+
+      with {:ok, game_id} <- Poker.create_game(name, deck_type_atom),
+           {:ok, _game} <-
+             Poker.join_game(game_id, socket.assigns.participant_id, player_name, role_atom) do
         {:noreply,
          socket
          |> put_flash(:info, "Game created successfully!")
-         |> push_navigate(to: ~p"/games/#{game_id}/join")}
-
-      {:error, _reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to create game. Please try again.")}
+         |> push_navigate(to: "/games/#{game_id}?name=#{URI.encode(player_name)}")}
+      else
+        {:error, _reason} ->
+          {:noreply, put_flash(socket, :error, "Failed to create game. Please try again.")}
+      end
     end
   end
 
@@ -55,7 +87,7 @@ defmodule PhxestimationsWeb.GameLive.New do
                 Create New Game
               </h1>
               <p class="text-slate-400 mt-2">
-                Set up your planning poker session
+                Set up your session and jump right in
               </p>
             </div>
 
@@ -116,6 +148,82 @@ defmodule PhxestimationsWeb.GameLive.New do
                 </div>
               </div>
 
+              <div>
+                <label for="player-name" class="block text-sm font-medium text-slate-300 mb-2">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  id="player-name"
+                  name="player_name"
+                  value={@form[:player_name].value}
+                  placeholder="Enter your name..."
+                  autofocus
+                  class={[
+                    "w-full px-4 py-3 rounded-xl",
+                    "bg-slate-900/50 border border-slate-600/50",
+                    "text-white placeholder-slate-500",
+                    "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                    "transition-all duration-150"
+                  ]}
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-3">
+                  Your Role
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      name="role"
+                      value="voter"
+                      checked={@form[:role].value == "voter"}
+                      class="peer sr-only"
+                    />
+                    <div class={[
+                      "p-4 rounded-xl border-2 text-center transition-all duration-150",
+                      "border-slate-600/50 bg-slate-900/30",
+                      "peer-checked:border-blue-500 peer-checked:bg-blue-500/10",
+                      "hover:border-slate-500"
+                    ]}>
+                      <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center mx-auto mb-2">
+                        <.icon name="hero-hand-raised" class="w-5 h-5 text-blue-400" />
+                      </div>
+                      <span class="font-medium text-white">Voter</span>
+                      <p class="text-xs text-slate-400 mt-1">
+                        Participate in voting
+                      </p>
+                    </div>
+                  </label>
+
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      name="role"
+                      value="spectator"
+                      checked={@form[:role].value == "spectator"}
+                      class="peer sr-only"
+                    />
+                    <div class={[
+                      "p-4 rounded-xl border-2 text-center transition-all duration-150",
+                      "border-slate-600/50 bg-slate-900/30",
+                      "peer-checked:border-purple-500 peer-checked:bg-purple-500/10",
+                      "hover:border-slate-500"
+                    ]}>
+                      <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center mx-auto mb-2">
+                        <.icon name="hero-eye" class="w-5 h-5 text-purple-400" />
+                      </div>
+                      <span class="font-medium text-white">Spectator</span>
+                      <p class="text-xs text-slate-400 mt-1">
+                        Watch without voting
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               <div class="pt-4">
                 <button
                   id="create-game-btn"
@@ -128,7 +236,7 @@ defmodule PhxestimationsWeb.GameLive.New do
                     "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-slate-800"
                   ]}
                 >
-                  <.icon name="hero-rocket-launch" class="w-5 h-5" /> Create Game
+                  <.icon name="hero-rocket-launch" class="w-5 h-5" /> Create & Join
                 </button>
               </div>
             </.form>
@@ -136,7 +244,7 @@ defmodule PhxestimationsWeb.GameLive.New do
 
           <div class="mt-8 text-center">
             <p class="text-sm text-slate-500">
-              After creating, you'll get a link to share with your team
+              Your team can join using the invite link once you're in
             </p>
           </div>
         </div>

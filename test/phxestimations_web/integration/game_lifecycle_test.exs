@@ -6,30 +6,22 @@ defmodule PhxestimationsWeb.Integration.GameLifecycleTest do
   alias Phxestimations.Poker
 
   describe "full game lifecycle" do
-    test "create game, join via form as voter, land in game room", %{conn: conn} do
+    test "create game and join as voter in one step, land in game room", %{conn: conn} do
       # Initialize session so participant_id persists across live() calls
       conn = get(conn, ~p"/")
 
-      # Create game via form
+      # Create game and join via merged form
       {:ok, new_view, _html} = live(conn, ~p"/games/new")
 
-      {:ok, join_view, html} =
+      {:ok, game_view, game_html} =
         new_view
-        |> form("#new-game-form", %{name: "Lifecycle Test", deck_type: "fibonacci"})
+        |> form("#new-game-form", %{
+          name: "Lifecycle Test",
+          deck_type: "fibonacci",
+          player_name: "Alice"
+        })
         |> render_submit()
         |> follow_redirect(conn)
-
-      assert html =~ "Lifecycle Test"
-      assert html =~ "Join Game"
-
-      # Join via form as voter - should redirect to game room
-      {:error, {:live_redirect, %{to: game_path}}} =
-        join_view
-        |> form("#join-game-form", %{name: "Alice", role: "voter"})
-        |> render_submit()
-
-      # Follow redirect to game room (same conn = same session = same participant_id)
-      {:ok, game_view, game_html} = live(conn, game_path)
 
       assert game_html =~ "Alice"
       assert has_element?(game_view, "#game-room")
