@@ -6,8 +6,11 @@ defmodule PhxestimationsWeb.Integration.GameLifecycleTest do
   alias Phxestimations.Poker
 
   describe "full game lifecycle" do
-    test "create game via New LiveView, join, vote, reveal, reset", %{conn: conn} do
-      # Step 1: Create game via form
+    test "create game, join via form as voter, land in game room", %{conn: conn} do
+      # Initialize session so participant_id persists across live() calls
+      conn = get(conn, ~p"/")
+
+      # Create game via form
       {:ok, new_view, _html} = live(conn, ~p"/games/new")
 
       {:ok, join_view, html} =
@@ -19,13 +22,36 @@ defmodule PhxestimationsWeb.Integration.GameLifecycleTest do
       assert html =~ "Lifecycle Test"
       assert html =~ "Join Game"
 
-      # Step 2: First user joins via join form
-      result =
+      # Join via form as voter - should redirect to game room
+      {:error, {:live_redirect, %{to: game_path}}} =
         join_view
         |> form("#join-game-form", %{name: "Alice", role: "voter"})
         |> render_submit()
 
-      assert {:error, {:live_redirect, %{to: "/games/" <> _rest}}} = result
+      # Follow redirect to game room (same conn = same session = same participant_id)
+      {:ok, game_view, game_html} = live(conn, game_path)
+
+      assert game_html =~ "Alice"
+      assert has_element?(game_view, "#game-room")
+      assert has_element?(game_view, "#card-deck")
+      assert_voting_state(game_view)
+    end
+
+    test "join via form as spectator lands in game room without card deck", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      game_id = create_test_game("Spectator Join Test", :fibonacci)
+
+      {:ok, join_view, _html} = live(conn, ~p"/games/#{game_id}/join")
+
+      {:error, {:live_redirect, %{to: game_path}}} =
+        join_view
+        |> form("#join-game-form", %{name: "Watcher", role: "spectator"})
+        |> render_submit()
+
+      {:ok, game_view, _html} = live(conn, game_path)
+
+      assert has_element?(game_view, "#game-room")
+      refute has_element?(game_view, "#card-deck")
     end
 
     test "3 users join, vote, reveal with stats, then reset", %{conn: _conn} do

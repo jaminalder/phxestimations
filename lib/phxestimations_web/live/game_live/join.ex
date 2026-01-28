@@ -35,7 +35,11 @@ defmodule PhxestimationsWeb.GameLive.Join do
     if name == "" do
       {:noreply, put_flash(socket, :error, "Please enter your name")}
     else
-      role_atom = String.to_existing_atom(role)
+      role_atom =
+        case role do
+          "voter" -> :voter
+          "spectator" -> :spectator
+        end
 
       case Poker.join_game(
              socket.assigns.game_id,
