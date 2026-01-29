@@ -15,6 +15,7 @@ defmodule PhxestimationsWeb.GameLive.Join do
         if connected?(socket), do: Poker.subscribe(game_id)
 
         {:ok, available} = Poker.available_avatars(game_id)
+        default_player_name = Poker.generate_player_name()
 
         {:ok,
          assign(socket,
@@ -23,7 +24,8 @@ defmodule PhxestimationsWeb.GameLive.Join do
            game: game,
            participant_id: participant_id,
            form: to_form(%{"name" => saved_name, "role" => "voter"}),
-           selected_avatar: nil,
+           default_player_name: default_player_name,
+           selected_avatar: if(available != [], do: Enum.random(available), else: nil),
            available_avatars: available
          )}
 
@@ -44,33 +46,30 @@ defmodule PhxestimationsWeb.GameLive.Join do
   @impl true
   def handle_event("join_game", %{"name" => name, "role" => role}, socket) do
     name = String.trim(name)
+    name = if name == "", do: socket.assigns.default_player_name, else: name
 
-    if name == "" do
-      {:noreply, put_flash(socket, :error, "Please enter your name")}
-    else
-      role_atom =
-        case role do
-          "voter" -> :voter
-          "spectator" -> :spectator
-        end
-
-      avatar_id = socket.assigns.selected_avatar
-
-      case Poker.join_game(
-             socket.assigns.game_id,
-             socket.assigns.participant_id,
-             name,
-             role_atom,
-             avatar_id
-           ) do
-        {:ok, _game} ->
-          {:noreply,
-           socket
-           |> push_navigate(to: "/games/#{socket.assigns.game_id}?name=#{URI.encode(name)}")}
-
-        {:error, _reason} ->
-          {:noreply, put_flash(socket, :error, "Failed to join game. Please try again.")}
+    role_atom =
+      case role do
+        "voter" -> :voter
+        "spectator" -> :spectator
       end
+
+    avatar_id = socket.assigns.selected_avatar
+
+    case Poker.join_game(
+           socket.assigns.game_id,
+           socket.assigns.participant_id,
+           name,
+           role_atom,
+           avatar_id
+         ) do
+      {:ok, _game} ->
+        {:noreply,
+         socket
+         |> push_navigate(to: "/games/#{socket.assigns.game_id}?name=#{URI.encode(name)}")}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to join game. Please try again.")}
     end
   end
 
@@ -130,14 +129,14 @@ defmodule PhxestimationsWeb.GameLive.Join do
             <.form id="join-game-form" for={@form} phx-submit="join_game" class="space-y-6">
               <div>
                 <label for="participant-name" class="block text-sm font-medium text-slate-300 mb-2">
-                  Your Name
+                  Your Name <span class="text-slate-500 font-normal">(optional)</span>
                 </label>
                 <input
                   type="text"
                   id="participant-name"
                   name="name"
                   value={@form[:name].value}
-                  placeholder="Enter your name..."
+                  placeholder={@default_player_name}
                   autofocus
                   class={[
                     "w-full px-4 py-3 rounded-xl",

@@ -43,12 +43,12 @@ defmodule PhxestimationsWeb.Integration.StoryFlowTest do
       {:ok, game} = Poker.get_game(game_id)
       assert game.story_name == nil
 
-      # Both views should show "No story set"
+      # Both views should not show the story name anymore
       html1 = render(v1)
       html2 = render(v2)
 
-      assert html1 =~ "No story set"
-      assert html2 =~ "No story set"
+      refute html1 =~ "PROJ-102: Signup"
+      refute html2 =~ "PROJ-102: Signup"
     end
   end
 end

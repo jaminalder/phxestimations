@@ -43,15 +43,16 @@ defmodule PhxestimationsWeb.GameLive.JoinTest do
       assert html =~ "Planning Poker"
     end
 
-    test "shows error for empty name", %{conn: conn, game_id: game_id} do
+    test "uses generated default name when name is empty", %{conn: conn, game_id: game_id} do
       {:ok, view, _html} = live(conn, ~p"/games/#{game_id}/join")
 
-      html =
+      result =
         view
         |> form("#join-game-form", %{name: "", role: "voter"})
         |> render_submit()
 
-      assert html =~ "Please enter your name"
+      assert {:error, {:live_redirect, %{to: to}}} = result
+      assert to =~ ~r/name=\w+/
     end
 
     test "joins game as voter and redirects to game room", %{conn: conn, game_id: game_id} do

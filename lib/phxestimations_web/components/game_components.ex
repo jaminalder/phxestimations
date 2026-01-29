@@ -44,7 +44,7 @@ defmodule PhxestimationsWeb.GameComponents do
     <img
       src={Poker.avatar_url(@avatar_id)}
       alt="Avatar"
-      class={["rounded-full bg-slate-700", @size_class, @class]}
+      class={[@size_class, @class]}
     />
     """
   end
@@ -82,7 +82,7 @@ defmodule PhxestimationsWeb.GameComponents do
           phx-value-avatar-id={id}
           disabled={!available?}
           class={[
-            "relative p-1 rounded-full transition-all duration-150",
+            "relative p-1 transition-all duration-150",
             "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-slate-800",
             cond do
               selected? ->
@@ -99,7 +99,7 @@ defmodule PhxestimationsWeb.GameComponents do
           <.avatar avatar_id={id} size={:md} />
           <div
             :if={!available?}
-            class="absolute inset-0 flex items-center justify-center bg-slate-900/60 rounded-full"
+            class="absolute inset-0 flex items-center justify-center bg-slate-900/60"
           >
             <span class="text-xs text-slate-400 font-medium">Taken</span>
           </div>
@@ -246,24 +246,22 @@ defmodule PhxestimationsWeb.GameComponents do
         if(!@participant.connected, do: "opacity-50")
       ]}
     >
-      <p class={[
-        "text-sm font-medium truncate mb-3",
-        if(@participant.connected, do: "text-white", else: "text-slate-500")
-      ]}>
-        {@participant.name}
-      </p>
-      <p :if={!@participant.connected} class="text-xs text-slate-500 -mt-2 mb-2">disconnected</p>
+      <div class="flex flex-col items-center gap-2">
+        <p class={[
+          "text-sm font-medium truncate max-w-full",
+          if(@participant.connected, do: "text-white", else: "text-slate-500")
+        ]}>
+          {@participant.name}
+        </p>
+        <p :if={!@participant.connected} class="text-xs text-slate-500 -mt-1">disconnected</p>
 
-      <div class="flex items-center gap-3">
-        <div class="shrink-0">
-          <%= if @participant.avatar_id do %>
-            <.avatar avatar_id={@participant.avatar_id} size={:lg} />
-          <% else %>
-            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-2xl font-bold text-white">
-              {String.first(@participant.name) |> String.upcase()}
-            </div>
-          <% end %>
-        </div>
+        <%= if @participant.avatar_id do %>
+          <.avatar avatar_id={@participant.avatar_id} size={:lg} />
+        <% else %>
+          <div class="w-16 h-16 flex items-center justify-center text-2xl font-bold text-white">
+            {String.first(@participant.name) |> String.upcase()}
+          </div>
+        <% end %>
 
         <div
           id={"participant-#{@participant.id}-card"}
@@ -481,10 +479,8 @@ defmodule PhxestimationsWeb.GameComponents do
             >
               {@game.name}
             </h1>
-            <p class="text-sm text-slate-400">
-              {Poker.deck_display_name(@game.deck_type)} •
-              <span :if={@game.story_name} class="text-blue-400">{@game.story_name}</span>
-              <span :if={!@game.story_name} class="text-slate-500">No story set</span>
+            <p :if={@game.story_name} class="text-sm text-blue-400">
+              {@game.story_name}
             </p>
           </div>
           <div class="flex items-center gap-3">

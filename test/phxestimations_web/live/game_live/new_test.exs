@@ -113,21 +113,22 @@ defmodule PhxestimationsWeb.GameLive.NewTest do
       refute has_element?(game_view, "#card-deck")
     end
 
-    test "rejects empty player name", %{conn: conn} do
+    test "uses generated default name when player name is empty", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/games/new")
 
-      html =
+      result =
         view
         |> form("#new-game-form", %{name: "Test Game", deck_type: "fibonacci", player_name: ""})
         |> render_submit()
 
-      assert html =~ "Please enter your name"
+      assert {:error, {:live_redirect, %{to: to}}} = result
+      assert to =~ ~r/name=\w+/
     end
 
-    test "rejects whitespace-only player name", %{conn: conn} do
+    test "uses generated default name when player name is whitespace-only", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/games/new")
 
-      html =
+      result =
         view
         |> form("#new-game-form", %{
           name: "Test Game",
@@ -136,7 +137,8 @@ defmodule PhxestimationsWeb.GameLive.NewTest do
         })
         |> render_submit()
 
-      assert html =~ "Please enter your name"
+      assert {:error, {:live_redirect, %{to: to}}} = result
+      assert to =~ ~r/name=\w+/
     end
   end
 end

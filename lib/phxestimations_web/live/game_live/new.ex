@@ -13,6 +13,9 @@ defmodule PhxestimationsWeb.GameLive.New do
       Poker.deck_types()
       |> Enum.map(fn type -> {Poker.deck_display_name(type), type} end)
 
+    default_game_name = Poker.generate_game_name()
+    default_player_name = Poker.generate_player_name()
+
     {:ok,
      assign(socket,
        page_title: "New Game",
@@ -25,7 +28,9 @@ defmodule PhxestimationsWeb.GameLive.New do
            "role" => "voter"
          }),
        deck_types: deck_types,
-       selected_avatar: nil,
+       default_game_name: default_game_name,
+       default_player_name: default_player_name,
+       selected_avatar: Enum.random(Poker.avatar_ids()),
        available_avatars: Poker.avatar_ids()
      )}
   end
@@ -43,41 +48,38 @@ defmodule PhxestimationsWeb.GameLive.New do
         socket
       ) do
     player_name = String.trim(player_name)
+    player_name = if player_name == "", do: socket.assigns.default_player_name, else: player_name
 
-    if player_name == "" do
-      {:noreply, put_flash(socket, :error, "Please enter your name")}
-    else
-      deck_type_atom =
-        case deck_type do
-          "fibonacci" -> :fibonacci
-          "tshirt" -> :tshirt
-        end
-
-      role_atom =
-        case role do
-          "voter" -> :voter
-          "spectator" -> :spectator
-        end
-
-      avatar_id = socket.assigns.selected_avatar
-
-      with {:ok, game_id} <- Poker.create_game(name, deck_type_atom),
-           {:ok, _game} <-
-             Poker.join_game(
-               game_id,
-               socket.assigns.participant_id,
-               player_name,
-               role_atom,
-               avatar_id
-             ) do
-        {:noreply,
-         socket
-         |> put_flash(:info, "Game created successfully!")
-         |> push_navigate(to: "/games/#{game_id}?name=#{URI.encode(player_name)}")}
-      else
-        {:error, _reason} ->
-          {:noreply, put_flash(socket, :error, "Failed to create game. Please try again.")}
+    deck_type_atom =
+      case deck_type do
+        "fibonacci" -> :fibonacci
+        "tshirt" -> :tshirt
       end
+
+    role_atom =
+      case role do
+        "voter" -> :voter
+        "spectator" -> :spectator
+      end
+
+    avatar_id = socket.assigns.selected_avatar
+
+    with {:ok, game_id} <- Poker.create_game(name, deck_type_atom),
+         {:ok, _game} <-
+           Poker.join_game(
+             game_id,
+             socket.assigns.participant_id,
+             player_name,
+             role_atom,
+             avatar_id
+           ) do
+      {:noreply,
+       socket
+       |> put_flash(:info, "Game created successfully!")
+       |> push_navigate(to: "/games/#{game_id}?name=#{URI.encode(player_name)}")}
+    else
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to create game. Please try again.")}
     end
   end
 
@@ -122,7 +124,7 @@ defmodule PhxestimationsWeb.GameLive.New do
                   id="game-name"
                   name="name"
                   value={@form[:name].value}
-                  placeholder="e.g., Sprint Planning, Backlog Refinement..."
+                  placeholder={@default_game_name}
                   class={[
                     "w-full px-4 py-3 rounded-xl",
                     "bg-slate-900/50 border border-slate-600/50",
@@ -131,9 +133,6 @@ defmodule PhxestimationsWeb.GameLive.New do
                     "transition-all duration-150"
                   ]}
                 />
-                <p class="mt-2 text-sm text-slate-500">
-                  Leave empty for an auto-generated name
-                </p>
               </div>
 
               <div>
@@ -166,14 +165,14 @@ defmodule PhxestimationsWeb.GameLive.New do
 
               <div>
                 <label for="player-name" class="block text-sm font-medium text-slate-300 mb-2">
-                  Your Name
+                  Your Name <span class="text-slate-500 font-normal">(optional)</span>
                 </label>
                 <input
                   type="text"
                   id="player-name"
                   name="player_name"
                   value={@form[:player_name].value}
-                  placeholder="Enter your name..."
+                  placeholder={@default_player_name}
                   autofocus
                   class={[
                     "w-full px-4 py-3 rounded-xl",

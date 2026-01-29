@@ -255,11 +255,17 @@ defmodule Phxestimations.Poker do
   @adjectives ~w(swift clever brave bright calm cool eager fast gentle happy jolly kind lively merry nice proud quick sharp smart sunny wise)
   @nouns ~w(falcon tiger eagle lion wolf bear hawk phoenix dragon turtle panda koala otter fox deer rabbit heron crane raven owl)
 
-  defp generate_game_name do
+  @player_names ~w(Ace Bolt Chip Dash Echo Fizz Gizmo Hex Jazz Knot Loop Mojo Nix Onyx Pixel Quest Riff Spark Turbo Vex Warp Zenith Blitz Cosmo Drift Ember Flux Glitch Nova Orbit Prism Quirk Ripple Sage Tempo Ultra Vibe Wren Zap)
+
+  def generate_game_name do
     adjective = Enum.random(@adjectives)
     noun = Enum.random(@nouns)
     number = :rand.uniform(99)
 
     "#{String.capitalize(adjective)} #{String.capitalize(noun)} #{number}"
+  end
+
+  def generate_player_name do
+    Enum.random(@player_names)
   end
 end
