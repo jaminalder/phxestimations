@@ -122,6 +122,17 @@ defmodule PhxestimationsWeb.GameLive.Show do
   end
 
   @impl true
+  def handle_info({:participant_removed, _participant_id, name}, socket) do
+    game = update_game_state(socket)
+
+    {:noreply,
+     socket
+     |> assign(game: game, current_participant: get_current_participant(socket, game))
+     |> assign_derived(game)
+     |> put_flash(:info, "#{name} left the game")}
+  end
+
+  @impl true
   def handle_info({:participant_connected, _participant_id}, socket) do
     game = update_game_state(socket)
     {:noreply, socket |> assign(game: game) |> assign_derived(game)}

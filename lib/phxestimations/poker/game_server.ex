@@ -12,6 +12,7 @@ defmodule Phxestimations.Poker.GameServer do
 
   @timeout_check_interval :timer.minutes(1)
   @empty_game_timeout :timer.minutes(5)
+  @disconnect_timeout :timer.seconds(10)
 
   # Client API
 
@@ -120,7 +121,9 @@ defmodule Phxestimations.Poker.GameServer do
   def init({game_id, name, deck_type}) do
     game = Game.new(game_id, name, deck_type)
     schedule_timeout_check()
-    {:ok, %{game: game, last_activity: System.monotonic_time(:millisecond)}}
+
+    {:ok,
+     %{game: game, last_activity: System.monotonic_time(:millisecond), disconnect_timers: %{}}}
   end
 
   @impl true
@@ -223,6 +226,13 @@ defmodule Phxestimations.Poker.GameServer do
 
     state = %{state | game: game, last_activity: now()}
 
+    state =
+      if connected do
+        cancel_disconnect_timer(state, participant_id)
+      else
+        schedule_disconnect_timer(state, participant_id)
+      end
+
     event =
       if connected,
         do: {:participant_reconnected, participant_id},
@@ -230,6 +240,22 @@ defmodule Phxestimations.Poker.GameServer do
 
     broadcast(game, event)
     {:reply, {:ok, game}, state}
+  end
+
+  @impl true
+  def handle_info({:disconnect_timeout, participant_id}, state) do
+    case Map.get(state.game.participants, participant_id) do
+      %{connected: false, name: name} ->
+        game = Game.remove_participant(state.game, participant_id)
+        timers = Map.delete(state.disconnect_timers, participant_id)
+        state = %{state | game: game, last_activity: now(), disconnect_timers: timers}
+        broadcast(game, {:participant_removed, participant_id, name})
+        {:noreply, state}
+
+      _ ->
+        # Reconnected or already removed — ignore
+        {:noreply, state}
+    end
   end
 
   @impl true
@@ -264,5 +290,22 @@ defmodule Phxestimations.Poker.GameServer do
     game_empty? = Game.empty?(state.game)
     time_since_activity = now() - state.last_activity
     game_empty? and time_since_activity > @empty_game_timeout
+  end
+
+  defp schedule_disconnect_timer(state, participant_id) do
+    ref = Process.send_after(self(), {:disconnect_timeout, participant_id}, @disconnect_timeout)
+    timers = Map.put(state.disconnect_timers, participant_id, ref)
+    %{state | disconnect_timers: timers}
+  end
+
+  defp cancel_disconnect_timer(state, participant_id) do
+    case Map.pop(state.disconnect_timers, participant_id) do
+      {nil, _} ->
+        state
+
+      {ref, timers} ->
+        Process.cancel_timer(ref)
+        %{state | disconnect_timers: timers}
+    end
   end
 end
