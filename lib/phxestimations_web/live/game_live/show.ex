@@ -195,8 +195,9 @@ defmodule PhxestimationsWeb.GameLive.Show do
   end
 
   defp assign_derived(socket, game) do
-    voters = voters(game)
-    spectators = spectators(game)
+    all_participants = participants_by_join_order(game)
+    voters = Enum.filter(all_participants, &(&1.role == :voter))
+    spectators = Enum.filter(all_participants, &(&1.role == :spectator))
     vote_count = Enum.count(voters, & &1.vote)
     total_voters = length(voters)
     all_voted? = voters != [] && Enum.all?(voters, & &1.vote)
@@ -210,6 +211,7 @@ defmodule PhxestimationsWeb.GameLive.Show do
       end
 
     assign(socket,
+      all_participants: all_participants,
       voters: voters,
       spectators: spectators,
       vote_count: vote_count,
@@ -219,18 +221,10 @@ defmodule PhxestimationsWeb.GameLive.Show do
     )
   end
 
-  defp voters(game) do
+  defp participants_by_join_order(game) do
     game.participants
-    |> Enum.filter(fn {_id, p} -> p.role == :voter end)
-    |> Enum.map(fn {_id, p} -> p end)
-    |> Enum.sort_by(& &1.name)
-  end
-
-  defp spectators(game) do
-    game.participants
-    |> Enum.filter(fn {_id, p} -> p.role == :spectator end)
-    |> Enum.map(fn {_id, p} -> p end)
-    |> Enum.sort_by(& &1.name)
+    |> Map.values()
+    |> Enum.sort_by(& &1.joined_at)
   end
 
   @impl true
@@ -242,8 +236,7 @@ defmodule PhxestimationsWeb.GameLive.Show do
 
         <main class="flex-1 flex flex-col">
           <.poker_table
-            voters={@voters}
-            spectators={@spectators}
+            all_participants={@all_participants}
             current_participant_id={@participant_id}
             game_state={@game.state}
             vote_count={@vote_count}

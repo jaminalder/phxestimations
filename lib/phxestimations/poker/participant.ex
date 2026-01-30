@@ -15,11 +15,12 @@ defmodule Phxestimations.Poker.Participant do
           role: role(),
           avatar_id: pos_integer() | nil,
           vote: String.t() | nil,
-          connected: boolean()
+          connected: boolean(),
+          joined_at: non_neg_integer()
         }
 
   @enforce_keys [:id, :name, :role]
-  defstruct [:id, :name, :role, :avatar_id, vote: nil, connected: true]
+  defstruct [:id, :name, :role, :avatar_id, vote: nil, connected: true, joined_at: 0]
 
   @doc """
   Creates a new participant.

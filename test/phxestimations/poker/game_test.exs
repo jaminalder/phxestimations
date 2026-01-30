@@ -43,7 +43,7 @@ defmodule Phxestimations.Poker.GameTest do
         |> Game.add_participant(participant)
 
       assert Game.participant_count(game) == 1
-      assert Game.get_participant(game, "p1") == participant
+      assert Game.get_participant(game, "p1") == %{participant | joined_at: 1}
     end
 
     test "adds multiple participants" do

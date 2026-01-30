@@ -19,7 +19,8 @@ defmodule Phxestimations.Poker.Game do
           story_name: String.t() | nil,
           participants: %{String.t() => Participant.t()},
           used_avatars: MapSet.t(pos_integer()),
-          created_at: DateTime.t()
+          created_at: DateTime.t(),
+          join_counter: non_neg_integer()
         }
 
   @enforce_keys [:id, :name, :deck_type, :created_at]
@@ -31,7 +32,8 @@ defmodule Phxestimations.Poker.Game do
     state: :voting,
     story_name: nil,
     participants: %{},
-    used_avatars: MapSet.new()
+    used_avatars: MapSet.new(),
+    join_counter: 0
   ]
 
   @doc """
@@ -54,7 +56,14 @@ defmodule Phxestimations.Poker.Game do
   """
   @spec add_participant(t(), Participant.t()) :: t()
   def add_participant(game, participant) do
-    game = %{game | participants: Map.put(game.participants, participant.id, participant)}
+    next_counter = game.join_counter + 1
+    participant = %{participant | joined_at: next_counter}
+
+    game = %{
+      game
+      | participants: Map.put(game.participants, participant.id, participant),
+        join_counter: next_counter
+    }
 
     if participant.avatar_id do
       claim_avatar(game, participant.avatar_id)

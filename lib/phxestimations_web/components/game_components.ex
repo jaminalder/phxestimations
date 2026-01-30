@@ -533,8 +533,7 @@ defmodule PhxestimationsWeb.GameComponents do
   @doc """
   Renders the poker table with all participants.
   """
-  attr :voters, :list, required: true
-  attr :spectators, :list, required: true
+  attr :all_participants, :list, required: true
   attr :current_participant_id, :string, required: true
   attr :game_state, :atom, required: true
   attr :vote_count, :integer, required: true
@@ -542,10 +541,6 @@ defmodule PhxestimationsWeb.GameComponents do
   attr :statistics, :map, default: nil
 
   def poker_table(assigns) do
-    all_participants = assigns.voters ++ assigns.spectators
-
-    assigns = assign(assigns, :all_participants, all_participants)
-
     ~H"""
     <div id="poker-table" class="flex-1 flex items-center justify-center p-8">
       <div class="w-full max-w-4xl">
