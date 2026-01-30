@@ -89,7 +89,7 @@ defmodule PhxestimationsWeb.GameLive.Join do
     {:noreply, assign(socket, available_avatars: available, selected_avatar: selected)}
   end
 
-  def handle_info({:participant_left, _participant_id}, socket) do
+  def handle_info({:participant_left, _participant_id, _name}, socket) do
     {:ok, available} = Poker.available_avatars(socket.assigns.game_id)
     {:noreply, assign(socket, :available_avatars, available)}
   end

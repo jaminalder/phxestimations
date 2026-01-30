@@ -148,10 +148,16 @@ defmodule Phxestimations.Poker.GameServer do
 
   @impl true
   def handle_call({:leave, participant_id}, _from, state) do
+    name =
+      case Map.get(state.game.participants, participant_id) do
+        %{name: name} -> name
+        _ -> nil
+      end
+
     game = Game.remove_participant(state.game, participant_id)
     state = %{state | game: game, last_activity: now()}
 
-    broadcast(game, {:participant_left, participant_id})
+    broadcast(game, {:participant_left, participant_id, name})
     {:reply, {:ok, game}, state}
   end
 

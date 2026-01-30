@@ -55,8 +55,10 @@ defmodule PhxestimationsWeb.CoreComponents do
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
+      phx-hook="AutoDismiss"
+      data-kind={@kind}
       role="alert"
-      class="toast toast-top toast-end z-50"
+      class="toast toast-top toast-center z-50"
       {@rest}
     >
       <div class={[

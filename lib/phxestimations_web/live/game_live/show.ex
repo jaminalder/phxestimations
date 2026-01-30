@@ -29,6 +29,7 @@ defmodule PhxestimationsWeb.GameLive.Show do
              current_participant: game.participants[participant_id],
              cards: Poker.deck_cards(game.deck_type),
              show_invite: false,
+             show_leave_confirm: false,
              game_url: url(socket, ~p"/games/#{game_id}/join")
            )
            |> assign_derived(game)}
@@ -85,6 +86,22 @@ defmodule PhxestimationsWeb.GameLive.Show do
   end
 
   @impl true
+  def handle_event("show_leave_confirm", _params, socket) do
+    {:noreply, assign(socket, show_leave_confirm: true)}
+  end
+
+  @impl true
+  def handle_event("close_leave_confirm", _params, socket) do
+    {:noreply, assign(socket, show_leave_confirm: false)}
+  end
+
+  @impl true
+  def handle_event("confirm_leave", _params, socket) do
+    Poker.leave_game(socket.assigns.game_id, socket.assigns.participant_id)
+    {:noreply, push_navigate(socket, to: ~p"/")}
+  end
+
+  @impl true
   def handle_event("toggle_role", _params, socket) do
     {:ok, _game} = Poker.toggle_role(socket.assigns.game_id, socket.assigns.participant_id)
     {:noreply, socket}
@@ -102,23 +119,25 @@ defmodule PhxestimationsWeb.GameLive.Show do
 
   # PubSub Handlers
   @impl true
-  def handle_info({:participant_joined, _participant}, socket) do
+  def handle_info({:participant_joined, participant}, socket) do
     game = update_game_state(socket)
 
     {:noreply,
      socket
      |> assign(game: game, current_participant: get_current_participant(socket, game))
-     |> assign_derived(game)}
+     |> assign_derived(game)
+     |> put_flash(:info, "#{participant.name} joined the game")}
   end
 
   @impl true
-  def handle_info({:participant_left, _participant_id}, socket) do
+  def handle_info({:participant_left, _participant_id, name}, socket) do
     game = update_game_state(socket)
 
     {:noreply,
      socket
      |> assign(game: game, current_participant: get_current_participant(socket, game))
-     |> assign_derived(game)}
+     |> assign_derived(game)
+     |> put_flash(:info, "#{name} left the game")}
   end
 
   @impl true
@@ -266,6 +285,7 @@ defmodule PhxestimationsWeb.GameLive.Show do
         </main>
 
         <.invite_modal game_url={@game_url} show={@show_invite} />
+        <.leave_confirm_modal show={@show_leave_confirm} />
       </div>
     </Layouts.app>
     """

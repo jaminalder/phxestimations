@@ -208,7 +208,7 @@ defmodule Phxestimations.Poker.GameServerTest do
 
       GameServer.leave(game_id, "p1")
 
-      assert_receive {:participant_left, "p1"}
+      assert_receive {:participant_left, "p1", "Alice"}
     end
 
     test "broadcasts vote_cast event" do

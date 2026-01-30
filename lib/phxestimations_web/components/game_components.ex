@@ -495,6 +495,78 @@ defmodule PhxestimationsWeb.GameComponents do
   end
 
   @doc """
+  Renders the leave confirmation modal.
+  """
+  attr :show, :boolean, default: false
+
+  def leave_confirm_modal(assigns) do
+    ~H"""
+    <div
+      :if={@show}
+      id="leave-confirm-modal"
+      class="fixed inset-0 z-50 flex items-center justify-center"
+      phx-mounted={JS.transition({"ease-out duration-200", "opacity-0", "opacity-100"})}
+    >
+      <div
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        phx-click="close_leave_confirm"
+      >
+      </div>
+
+      <div class="relative bg-slate-800 border border-red-500/30 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+        <button
+          id="close-leave-confirm-btn"
+          type="button"
+          phx-click="close_leave_confirm"
+          class="absolute top-4 right-4 text-slate-400 hover:text-white"
+        >
+          <span class="hero-x-mark w-6 h-6"></span>
+        </button>
+
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-red-500/10 mb-4">
+            <span class="hero-arrow-right-start-on-rectangle w-6 h-6 text-red-400"></span>
+          </div>
+          <h2 class="text-xl font-bold text-white">Leave Game?</h2>
+          <p class="text-sm text-slate-400 mt-1">
+            You will be removed from this session. You can rejoin later using the invite link.
+          </p>
+        </div>
+
+        <div class="flex gap-3">
+          <button
+            id="cancel-leave-btn"
+            type="button"
+            phx-click="close_leave_confirm"
+            class={[
+              "flex-1 px-4 py-3 rounded-xl font-medium",
+              "bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white",
+              "border border-slate-600/50",
+              "transition-all duration-150"
+            ]}
+          >
+            Cancel
+          </button>
+          <button
+            id="confirm-leave-btn"
+            type="button"
+            phx-click="confirm_leave"
+            class={[
+              "flex-1 px-4 py-3 rounded-xl font-medium",
+              "bg-red-500 hover:bg-red-400 text-white",
+              "shadow-lg shadow-red-500/25",
+              "transition-all duration-150"
+            ]}
+          >
+            Leave
+          </button>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   Renders the game header with title and controls.
   """
   attr :game, :map, required: true
@@ -529,6 +601,19 @@ defmodule PhxestimationsWeb.GameComponents do
               ]}
             >
               <span class="hero-link w-4 h-4"></span> Invite
+            </button>
+            <button
+              id="leave-btn"
+              type="button"
+              phx-click="show_leave_confirm"
+              class={[
+                "inline-flex items-center gap-2 px-4 py-2 rounded-lg",
+                "bg-slate-700/50 hover:bg-red-500/20 text-slate-300 hover:text-red-400",
+                "border border-slate-600/50 hover:border-red-500/50",
+                "transition-all duration-150"
+              ]}
+            >
+              <span class="hero-arrow-right-start-on-rectangle w-4 h-4"></span> Leave
             </button>
           </div>
         </div>
