@@ -234,18 +234,37 @@ defmodule PhxestimationsWeb.GameComponents do
         nil
       end
 
-    assigns = assign(assigns, :vote_icon, icon)
+    spectator? = assigns.participant.role == :spectator
+    assigns = assign(assigns, vote_icon: icon, spectator?: spectator?)
 
     ~H"""
     <div
       id={"participant-#{@participant.id}"}
       class={[
-        "p-4 rounded-xl animate-fade-in-up",
+        "p-4 rounded-xl animate-fade-in-up relative",
         "bg-slate-800/50 border-2",
         if(@current_user?, do: "border-blue-500", else: "border-slate-700/50"),
         if(!@participant.connected, do: "opacity-50")
       ]}
     >
+      <button
+        :if={@current_user?}
+        id={"toggle-role-#{@participant.id}"}
+        phx-click="toggle_role"
+        title={if @spectator?, do: "Switch to voter", else: "Switch to spectator"}
+        class={[
+          "absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center",
+          "transition-all duration-150",
+          if(@spectator?,
+            do: "bg-slate-600/50 hover:bg-purple-500/30 text-slate-400 hover:text-purple-400",
+            else: "bg-slate-600/50 hover:bg-blue-500/30 text-slate-400 hover:text-blue-400"
+          )
+        ]}
+      >
+        <span :if={!@spectator?} class="hero-hand-raised-mini w-3.5 h-3.5"></span>
+        <span :if={@spectator?} class="hero-eye-mini w-3.5 h-3.5"></span>
+      </button>
+
       <div class="flex flex-col items-center gap-2">
         <p class={[
           "text-sm font-medium truncate max-w-full",
@@ -269,6 +288,9 @@ defmodule PhxestimationsWeb.GameComponents do
             "w-12 h-16 rounded-lg flex items-center justify-center",
             "text-sm font-bold shadow-lg",
             cond do
+              @spectator? ->
+                "bg-slate-700/50 border border-slate-600/30 text-slate-500"
+
               @revealed? && @participant.vote ->
                 "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white"
 
@@ -280,13 +302,17 @@ defmodule PhxestimationsWeb.GameComponents do
             end
           ]}
         >
-          <%= if @revealed? && @participant.vote do %>
-            <.card_value card={@participant.vote} icon={@vote_icon} class="w-5 h-5" />
+          <%= if @spectator? do %>
+            <span class="hero-eye-mini w-4 h-4"></span>
           <% else %>
-            <%= if @participant.vote do %>
-              <span class="hero-check w-5 h-5"></span>
+            <%= if @revealed? && @participant.vote do %>
+              <.card_value card={@participant.vote} icon={@vote_icon} class="w-5 h-5" />
             <% else %>
-              ?
+              <%= if @participant.vote do %>
+                <span class="hero-check w-5 h-5"></span>
+              <% else %>
+                ?
+              <% end %>
             <% end %>
           <% end %>
         </div>
@@ -516,14 +542,18 @@ defmodule PhxestimationsWeb.GameComponents do
   attr :statistics, :map, default: nil
 
   def poker_table(assigns) do
+    all_participants = assigns.voters ++ assigns.spectators
+
+    assigns = assign(assigns, :all_participants, all_participants)
+
     ~H"""
     <div id="poker-table" class="flex-1 flex items-center justify-center p-8">
       <div class="w-full max-w-4xl">
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
           <.participant_card
-            :for={voter <- @voters}
-            participant={voter}
-            current_user?={voter.id == @current_participant_id}
+            :for={participant <- @all_participants}
+            participant={participant}
+            current_user?={participant.id == @current_participant_id}
             revealed?={@game_state == :revealed}
           />
         </div>
@@ -534,13 +564,6 @@ defmodule PhxestimationsWeb.GameComponents do
           total_voters={@total_voters}
           statistics={@statistics}
         />
-
-        <div :if={@spectators != []} class="text-center text-sm text-slate-500 mt-6">
-          <span class="hero-eye w-4 h-4 inline"></span>
-          <span class="ml-1">
-            Spectators: {Enum.map(@spectators, & &1.name) |> Enum.join(", ")}
-          </span>
-        </div>
       </div>
     </div>
     """

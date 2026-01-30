@@ -85,6 +85,12 @@ defmodule PhxestimationsWeb.GameLive.Show do
   end
 
   @impl true
+  def handle_event("toggle_role", _params, socket) do
+    {:ok, _game} = Poker.toggle_role(socket.assigns.game_id, socket.assigns.participant_id)
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("show_invite", _params, socket) do
     {:noreply, assign(socket, show_invite: true)}
   end
@@ -151,6 +157,16 @@ defmodule PhxestimationsWeb.GameLive.Show do
 
   @impl true
   def handle_info({:round_reset, _game}, socket) do
+    game = update_game_state(socket)
+
+    {:noreply,
+     socket
+     |> assign(game: game, current_participant: get_current_participant(socket, game))
+     |> assign_derived(game)}
+  end
+
+  @impl true
+  def handle_info({:role_toggled, _participant_id}, socket) do
     game = update_game_state(socket)
 
     {:noreply,

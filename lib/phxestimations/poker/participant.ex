@@ -50,6 +50,19 @@ defmodule Phxestimations.Poker.Participant do
   end
 
   @doc """
+  Toggles the participant's role between voter and spectator.
+  Clears any existing vote when switching to spectator.
+  """
+  @spec toggle_role(t()) :: t()
+  def toggle_role(%__MODULE__{role: :voter} = participant) do
+    %{participant | role: :spectator, vote: nil}
+  end
+
+  def toggle_role(%__MODULE__{role: :spectator} = participant) do
+    %{participant | role: :voter}
+  end
+
+  @doc """
   Clears the participant's vote.
   """
   @spec clear_vote(t()) :: t()

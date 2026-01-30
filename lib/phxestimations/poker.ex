@@ -99,6 +99,14 @@ defmodule Phxestimations.Poker do
   end
 
   @doc """
+  Toggles a participant's role between voter and spectator.
+  """
+  @spec toggle_role(String.t(), String.t()) :: {:ok, Game.t()} | {:error, term()}
+  def toggle_role(game_id, participant_id) do
+    GameServer.toggle_role(game_id, participant_id)
+  end
+
+  @doc """
   Sets a participant's connection status.
   """
   @spec set_participant_connected(String.t(), String.t(), boolean()) ::

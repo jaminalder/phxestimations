@@ -94,6 +94,13 @@ defmodule Phxestimations.Poker.GameServer do
   end
 
   @doc """
+  Toggles a participant's role between voter and spectator.
+  """
+  def toggle_role(game_id, participant_id) do
+    GenServer.call(via_tuple(game_id), {:toggle_role, participant_id})
+  end
+
+  @doc """
   Sets a participant's connection status.
   """
   def set_connected(game_id, participant_id, connected) do
@@ -182,6 +189,17 @@ defmodule Phxestimations.Poker.GameServer do
     state = %{state | game: game, last_activity: now()}
 
     broadcast(game, {:story_name_changed, story_name})
+    {:reply, {:ok, game}, state}
+  end
+
+  @impl true
+  def handle_call({:toggle_role, participant_id}, _from, state) do
+    game =
+      Game.update_participant(state.game, participant_id, &Participant.toggle_role/1)
+
+    state = %{state | game: game, last_activity: now()}
+
+    broadcast(game, {:role_toggled, participant_id})
     {:reply, {:ok, game}, state}
   end
 

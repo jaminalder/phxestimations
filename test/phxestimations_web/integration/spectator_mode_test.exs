@@ -52,14 +52,13 @@ defmodule PhxestimationsWeb.Integration.SpectatorModeTest do
       assert_average_displayed(sv, 6.0)
     end
 
-    test "spectator is listed in spectators section", %{
+    test "spectator is shown as a participant card", %{
       game_id: game_id,
       spectators: [spec]
     } do
       {:ok, _view, html} = live(spec.conn, ~p"/games/#{game_id}")
 
       assert html =~ "Observer"
-      assert html =~ "Spectators:"
     end
 
     test "spectator does not count toward voter total", %{
