@@ -482,7 +482,7 @@ defmodule PhxestimationsWeb.GameComponents do
             <button
               id="copy-link-btn"
               type="button"
-              phx-click={JS.dispatch("phx:copy", to: "#invite-link")}
+              phx-click={JS.dispatch("phx:copy", to: "#invite-link") |> JS.push("copy_invite_link")}
               class="px-4 py-3 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-medium transition-all"
             >
               Copy

@@ -28,7 +28,7 @@ defmodule PhxestimationsWeb.GameLive.Show do
              participant_id: participant_id,
              current_participant: game.participants[participant_id],
              cards: Poker.deck_cards(game.deck_type),
-             show_invite: false,
+             show_invite: map_size(game.participants) == 1,
              show_leave_confirm: false,
              game_url: url(socket, ~p"/games/#{game_id}/join")
            )
@@ -115,6 +115,14 @@ defmodule PhxestimationsWeb.GameLive.Show do
   @impl true
   def handle_event("close_invite", _params, socket) do
     {:noreply, assign(socket, show_invite: false)}
+  end
+
+  @impl true
+  def handle_event("copy_invite_link", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(show_invite: false)
+     |> put_flash(:info, "Invite link copied")}
   end
 
   # PubSub Handlers

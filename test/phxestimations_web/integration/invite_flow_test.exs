@@ -10,7 +10,13 @@ defmodule PhxestimationsWeb.Integration.InviteFlowTest do
       %{game_id: game_id, view: view}
     end
 
-    test "invite button shows modal", %{view: view} do
+    test "invite modal auto-opens for single participant", %{view: view} do
+      assert has_element?(view, "#invite-modal")
+    end
+
+    test "invite button shows modal after closing", %{view: view} do
+      # Modal is auto-opened for single participant; close it first
+      view |> element("#close-invite-btn") |> render_click()
       refute has_element?(view, "#invite-modal")
 
       show_invite_via_view(view)
