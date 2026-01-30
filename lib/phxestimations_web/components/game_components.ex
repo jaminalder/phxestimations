@@ -7,7 +7,6 @@ defmodule PhxestimationsWeb.GameComponents do
 
   alias Phoenix.LiveView.JS
   alias Phxestimations.Poker
-  alias Phxestimations.Poker.Deck
 
   # ============================================================================
   # Avatar Components
@@ -133,9 +132,6 @@ defmodule PhxestimationsWeb.GameComponents do
   attr :disabled, :boolean, default: false
 
   def poker_card(assigns) do
-    icon = Deck.card_icon(assigns.card)
-    assigns = assign(assigns, :icon, icon)
-
     ~H"""
     <button
       id={"card-#{@card}"}
@@ -155,7 +151,7 @@ defmodule PhxestimationsWeb.GameComponents do
         unless(@disabled, do: "hover:-translate-y-1")
       ]}
     >
-      <.card_value card={@card} icon={@icon} />
+      <.card_value card={@card} />
     </button>
     """
   end
@@ -164,20 +160,38 @@ defmodule PhxestimationsWeb.GameComponents do
   Renders the value content for a card, with icon support for special cards.
   """
   attr :card, :string, required: true
-  attr :icon, :any, default: nil
   attr :class, :string, default: "w-6 h-6"
 
   def card_value(assigns) do
     ~H"""
-    <%= case @icon do %>
-      <% :infinity -> %>
+    <%= case @card do %>
+      <% "∞" -> %>
         <svg class={@class} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" />
         </svg>
-      <% nil -> %>
+      <% "?" -> %>
+        ?
+      <% "coffee" -> %>
+        <svg
+          class={@class}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M17 8h1a4 4 0 1 1 0 8h-1" /><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" /><line
+            x1="6"
+            y1="2"
+            x2="6"
+            y2="4"
+          /><line x1="10" y1="2" x2="10" y2="4" /><line x1="14" y1="2" x2="14" y2="4" />
+        </svg>
+      <% "bug" -> %>
+        <span class={["hero-bug-ant", @class]}></span>
+      <% _ -> %>
         {@card}
-      <% icon -> %>
-        <span class={[icon, @class]}></span>
     <% end %>
     """
   end
@@ -227,15 +241,8 @@ defmodule PhxestimationsWeb.GameComponents do
   attr :revealed?, :boolean, default: false
 
   def participant_card(assigns) do
-    icon =
-      if assigns.revealed? && assigns.participant.vote do
-        Deck.card_icon(assigns.participant.vote)
-      else
-        nil
-      end
-
     spectator? = assigns.participant.role == :spectator
-    assigns = assign(assigns, vote_icon: icon, spectator?: spectator?)
+    assigns = assign(assigns, spectator?: spectator?)
 
     ~H"""
     <div
@@ -306,7 +313,7 @@ defmodule PhxestimationsWeb.GameComponents do
             <span class="hero-eye-mini w-4 h-4"></span>
           <% else %>
             <%= if @revealed? && @participant.vote do %>
-              <.card_value card={@participant.vote} icon={@vote_icon} class="w-5 h-5" />
+              <.card_value card={@participant.vote} class="w-5 h-5" />
             <% else %>
               <%= if @participant.vote do %>
                 <span class="hero-check w-5 h-5"></span>
