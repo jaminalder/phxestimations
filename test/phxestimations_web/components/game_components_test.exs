@@ -155,22 +155,22 @@ defmodule PhxestimationsWeb.GameComponentsTest do
 
   describe "game_controls/1" do
     test "renders reveal button when voting" do
-      html = render_component(&GameComponents.game_controls/1, state: :voting, all_voted?: true)
+      html = render_component(&GameComponents.game_controls/1, state: :voting, any_voted?: true)
 
       assert html =~ ~s(id="reveal-btn")
       assert html =~ "Reveal Votes"
       assert html =~ "bg-emerald-500"
     end
 
-    test "disables reveal button when not all voted" do
-      html = render_component(&GameComponents.game_controls/1, state: :voting, all_voted?: false)
+    test "disables reveal button when nobody has voted" do
+      html = render_component(&GameComponents.game_controls/1, state: :voting, any_voted?: false)
 
       assert html =~ "disabled"
       assert html =~ "cursor-not-allowed"
     end
 
     test "renders reset button when revealed" do
-      html = render_component(&GameComponents.game_controls/1, state: :revealed, all_voted?: true)
+      html = render_component(&GameComponents.game_controls/1, state: :revealed, any_voted?: true)
 
       assert html =~ ~s(id="reset-btn")
       assert html =~ "New Round"

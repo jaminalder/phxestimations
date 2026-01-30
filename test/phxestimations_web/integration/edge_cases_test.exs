@@ -33,12 +33,11 @@ defmodule PhxestimationsWeb.Integration.EdgeCasesTest do
 
       [%{view: v1}, %{view: v2}] = connect_users_to_game([u1, u2], game_id)
 
-      # Vote and reveal
+      # Vote (auto-reveals when all voted)
       vote_via_view(v1, "5")
       vote_via_view(v2, "8")
-      reveal_via_view(v1)
 
-      # New user joins after reveal
+      # New user joins after auto-reveal
       {conn3, pid3} = build_user_conn()
       {:ok, _game} = Poker.join_game(game_id, pid3, "LateComer", :voter)
       {:ok, v3, _html} = live(conn3, ~p"/games/#{game_id}")
@@ -51,12 +50,12 @@ defmodule PhxestimationsWeb.Integration.EdgeCasesTest do
   describe "vote after reveal" do
     test "casting vote after reveal returns error via API" do
       %{game_id: game_id, users: [u1]} = setup_game_with_voters(1)
-      [%{view: v1}] = connect_users_to_game([u1], game_id)
+      [%{view: _v1}] = connect_users_to_game([u1], game_id)
 
-      vote_via_view(v1, "5")
-      reveal_via_view(v1)
+      # Single voter - vote auto-reveals
+      Poker.cast_vote(game_id, u1.participant_id, "5")
 
-      # Try to vote via API after reveal
+      # Try to vote via API after auto-reveal
       result = Poker.cast_vote(game_id, u1.participant_id, "8")
       assert {:error, :already_revealed} = result
     end

@@ -158,7 +158,16 @@ defmodule Phxestimations.Poker.GameServer do
       {:ok, game} ->
         state = %{state | game: game, last_activity: now()}
         broadcast(game, {:vote_cast, participant_id})
-        {:reply, {:ok, game}, state}
+
+        # Auto-reveal when all voters have voted
+        if Game.all_voters_voted?(game) do
+          game = Game.reveal_votes(game)
+          state = %{state | game: game}
+          broadcast(game, {:votes_revealed, game})
+          {:reply, {:ok, game}, state}
+        else
+          {:reply, {:ok, game}, state}
+        end
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}

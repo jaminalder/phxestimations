@@ -200,7 +200,7 @@ defmodule PhxestimationsWeb.GameLive.Show do
     spectators = Enum.filter(all_participants, &(&1.role == :spectator))
     vote_count = Enum.count(voters, & &1.vote)
     total_voters = length(voters)
-    all_voted? = voters != [] && Enum.all?(voters, & &1.vote)
+    any_voted? = vote_count > 0
 
     statistics =
       if game.state == :revealed do
@@ -216,7 +216,7 @@ defmodule PhxestimationsWeb.GameLive.Show do
       spectators: spectators,
       vote_count: vote_count,
       total_voters: total_voters,
-      all_voted?: all_voted?,
+      any_voted?: any_voted?,
       statistics: statistics
     )
   end
@@ -251,7 +251,7 @@ defmodule PhxestimationsWeb.GameLive.Show do
             state={@game.state}
           />
 
-          <.game_controls state={@game.state} all_voted?={@all_voted?} />
+          <.game_controls state={@game.state} any_voted?={@any_voted?} />
         </main>
 
         <.invite_modal game_url={@game_url} show={@show_invite} />

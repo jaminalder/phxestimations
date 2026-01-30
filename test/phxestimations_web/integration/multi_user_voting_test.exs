@@ -37,15 +37,13 @@ defmodule PhxestimationsWeb.Integration.MultiUserVotingTest do
       assert voted == 1
     end
 
-    test "all voters voting enables the reveal button", %{views: [v1, v2, v3, v4]} do
+    test "all voters voting auto-reveals", %{views: [v1, v2, v3, v4]} do
       vote_via_view(v1, "3")
       vote_via_view(v2, "5")
       vote_via_view(v3, "8")
       vote_via_view(v4, "5")
 
-      # All voted - reveal should work
-      reveal_via_view(v1)
-
+      # Auto-revealed after all voters voted
       assert_revealed_state(v1)
       assert_revealed_state(v2)
       assert_revealed_state(v3)
@@ -58,9 +56,7 @@ defmodule PhxestimationsWeb.Integration.MultiUserVotingTest do
       vote_via_view(v3, "13")
       vote_via_view(v4, "5")
 
-      reveal_via_view(v1)
-
-      # All views should show the votes in rendered HTML
+      # Auto-revealed - all views should show the votes in rendered HTML
       for view <- [v1, v2, v3, v4] do
         html = render(view)
         assert html =~ "5"
@@ -86,12 +82,10 @@ defmodule PhxestimationsWeb.Integration.MultiUserVotingTest do
       {:ok, game} = Poker.get_game(game_id)
       assert game.participants[u1.participant_id].vote == "8"
 
-      # Complete voting and reveal to verify changed vote
+      # Complete voting (auto-reveals on last vote)
       vote_via_view(v2, "3")
       vote_via_view(v3, "5")
       vote_via_view(v4, "5")
-
-      reveal_via_view(v1)
 
       # Verify the changed vote is shown (8, not 5)
       {:ok, game} = Poker.get_game(game_id)

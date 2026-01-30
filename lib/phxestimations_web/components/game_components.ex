@@ -388,10 +388,10 @@ defmodule PhxestimationsWeb.GameComponents do
 
   ## Examples
 
-      <.game_controls state={:voting} all_voted?={true} />
+      <.game_controls state={:voting} any_voted?={true} />
   """
   attr :state, :atom, required: true
-  attr :all_voted?, :boolean, default: false
+  attr :any_voted?, :boolean, default: false
 
   def game_controls(assigns) do
     ~H"""
@@ -401,11 +401,11 @@ defmodule PhxestimationsWeb.GameComponents do
           :if={@state == :voting}
           id="reveal-btn"
           phx-click="reveal"
-          disabled={!@all_voted?}
+          disabled={!@any_voted?}
           class={[
             "inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold",
             "transition-all duration-150",
-            if(@all_voted?,
+            if(@any_voted?,
               do: "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25",
               else: "bg-slate-700 text-slate-400 cursor-not-allowed"
             )

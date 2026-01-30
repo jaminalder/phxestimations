@@ -60,7 +60,7 @@ defmodule PhxestimationsWeb.Integration.GameLifecycleTest do
       assert_participant_visible(v2, "Alice")
       assert_participant_visible(v3, "Bob")
 
-      # All vote
+      # All vote (auto-reveals when last voter votes)
       vote_via_view(v1, "5")
       vote_via_view(v2, "8")
       vote_via_view(v3, "5")
@@ -70,10 +70,7 @@ defmodule PhxestimationsWeb.Integration.GameLifecycleTest do
       voted = Enum.count(game.participants, fn {_id, p} -> p.vote != nil end)
       assert voted == 3
 
-      # Reveal
-      reveal_via_view(v1)
-
-      # All views show revealed state
+      # All views show revealed state (auto-revealed)
       assert_revealed_state(v1)
       assert_revealed_state(v2)
       assert_revealed_state(v3)

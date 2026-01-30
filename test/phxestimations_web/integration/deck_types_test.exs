@@ -39,8 +39,7 @@ defmodule PhxestimationsWeb.Integration.DeckTypesTest do
       vote_via_view(v1, "5")
       vote_via_view(v2, "13")
 
-      reveal_via_view(v1)
-
+      # Auto-revealed after all voters voted
       # Average of 5 and 13 = 9.0
       assert_average_displayed(v1, 9.0)
     end
@@ -77,8 +76,7 @@ defmodule PhxestimationsWeb.Integration.DeckTypesTest do
       vote_via_view(v1, "M")
       vote_via_view(v2, "L")
 
-      reveal_via_view(v1)
-
+      # Auto-revealed after all voters voted
       # T-shirt sizes have no numeric average
       refute_average_displayed(v1)
     end

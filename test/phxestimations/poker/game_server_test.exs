@@ -108,6 +108,7 @@ defmodule Phxestimations.Poker.GameServerTest do
     test "allows changing vote" do
       game_id = start_game()
       GameServer.join(game_id, "p1", "Alice", :voter)
+      GameServer.join(game_id, "p2", "Bob", :voter)
       GameServer.vote(game_id, "p1", "5")
 
       {:ok, game} = GameServer.vote(game_id, "p1", "8")

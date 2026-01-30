@@ -39,15 +39,12 @@ defmodule PhxestimationsWeb.Integration.SpectatorModeTest do
       {:ok, vv2, _} = live(v2.conn, ~p"/games/#{game_id}")
       {:ok, vv3, _} = live(v3.conn, ~p"/games/#{game_id}")
 
-      # All voters vote
+      # All voters vote (auto-reveals when last voter votes)
       vote_via_view(vv1, "5")
       vote_via_view(vv2, "8")
       vote_via_view(vv3, "5")
 
-      # Reveal
-      reveal_via_view(vv1)
-
-      # Spectator sees revealed state
+      # Spectator sees auto-revealed state
       assert_revealed_state(sv)
       assert_average_displayed(sv, 6.0)
     end

@@ -32,11 +32,10 @@ defmodule PhxestimationsWeb.Integration.StoryFlowTest do
     test "vote, reveal, reset clears story name", %{game_id: game_id, users: [u1, u2]} do
       [%{view: v1}, %{view: v2}] = connect_users_to_game([u1, u2], game_id)
 
-      # Set story, vote, reveal, reset
+      # Set story, vote (auto-reveals), reset
       render_click(v1, "set_story", %{"story" => "PROJ-102: Signup"})
       vote_via_view(v1, "5")
       vote_via_view(v2, "8")
-      reveal_via_view(v1)
       reset_via_view(v1)
 
       # Story should be cleared
