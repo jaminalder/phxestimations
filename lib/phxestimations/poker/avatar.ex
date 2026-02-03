@@ -44,7 +44,7 @@ defmodule Phxestimations.Poker.Avatar do
       eyes: "glow",
       mouth: "grill01",
       sides: "round",
-      top: "horns"
+      top: "glowingBulb02"
     },
     4 => %{
       id: 4,
