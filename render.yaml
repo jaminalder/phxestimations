@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: phxestimations
+    runtime: elixir
+    buildCommand: "./build.sh"
+    startCommand: "_build/prod/rel/phxestimations/bin/server"
+    envVars:
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: ELIXIR_VERSION
+        value: "1.17.3"
+      - key: ERLANG_VERSION
+        value: "27.1.2"
