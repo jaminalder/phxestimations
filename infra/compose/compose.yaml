@@ -1,0 +1,9 @@
+services:
+  app:
+    image: phxestimations:latest
+    container_name: phxestimations
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
